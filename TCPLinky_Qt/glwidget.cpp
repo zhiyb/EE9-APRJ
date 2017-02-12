@@ -2,6 +2,7 @@
 #include <QDebug>
 #include <QDialog>
 #include <QVBoxLayout>
+#include <QHostAddress>
 
 // 4 bytes header, 1 byte command, 1 byte stream
 static const uint8_t header[] = {0xde, 0xad, 0xbe, 0xef, 0x01, 0x00};
@@ -36,6 +37,7 @@ GLWidget::GLWidget(QTcpSocket *socket, QWidget *parent) : QOpenGLWidget(parent)
 	setFocusPolicy(Qt::StrongFocus);
 	setAutoFillBackground(false);
 	resize(640, 640);
+	setWindowTitle(socket->peerAddress().toString());
 }
 
 void GLWidget::initializeGL()
