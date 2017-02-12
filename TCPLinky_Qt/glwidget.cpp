@@ -24,7 +24,7 @@ GLWidget::GLWidget(QTcpSocket *socket, QWidget *parent) : QOpenGLWidget(parent)
 	QSurfaceFormat fmt = format();
 	fmt.setSamples(4);
 	fmt.setSwapInterval(0);
-	fmt.setVersion(3, 3);
+	fmt.setVersion(3, 0);
 	fmt.setOption(0);
 	fmt.setProfile(QSurfaceFormat::CoreProfile);
 	fmt.setDepthBufferSize(0);
@@ -95,18 +95,22 @@ void GLWidget::initializeGL()
 	glEnableVertexAttribArray(data.loc.vertex);
 	glVertexAttribPointer(data.loc.vertex, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
+	data.loc.intensity = glGetUniformLocation(data.program, "intensity");
+#if 0
 	data.loc.intensity = glGetAttribLocation(data.program, "intensity");
 	glGenBuffers(1, &data.bIntensity);
 	glBindBuffer(GL_ARRAY_BUFFER, data.bIntensity);
 	glBufferData(GL_ARRAY_BUFFER, 65536 * sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
 	glEnableVertexAttribArray(data.loc.intensity);
 	glVertexAttribPointer(data.loc.intensity, 1, GL_FLOAT, GL_FALSE, 0, 0);
-	glVertexAttribDivisor(data.loc.intensity, 1);
+	//glVertexAttribDivisor(data.loc.intensity, 1);
+#endif
 
 	data.loc.projection = glGetUniformLocation(data.program, "projection");
 	data.loc.zoom = glGetUniformLocation(data.program, "zoom");
 	data.loc.move = glGetUniformLocation(data.program, "move");
 	data.loc.dimension = glGetUniformLocation(data.program, "dimension");
+	data.loc.index = glGetUniformLocation(data.program, "index");
 }
 
 void GLWidget::resizeGL(int w, int h)
@@ -138,7 +142,12 @@ void GLWidget::paintGL()
 	glUniform2f(data.loc.move, data.moveX, data.moveY);
 
 	glClear(GL_COLOR_BUFFER_BIT);
-	glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, _channels.size());
+	for (uint32_t i = 0; i != _channels.size(); i++) {
+		glUniform1i(data.loc.index, i);
+		glUniform1f(data.loc.intensity, _channels[i]);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	}
+	//glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, _channels.size());
 }
 
 void GLWidget::closeEvent(QCloseEvent *event)

@@ -2,10 +2,10 @@
 #define GLWIDGET_H
 
 #include <QtWidgets>
-#include <QOpenGLFunctions_3_3_Core>
+#include <QOpenGLFunctions_3_0>
 #include <QTcpSocket>
 
-class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
+class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions_3_0
 {
 	Q_OBJECT
 public:
@@ -43,6 +43,7 @@ private:
 			GLint projection, dimension;
 			GLint vertex, intensity;
 			GLint zoom, move;
+			GLint index;
 		} loc;
 		GLuint program, vsh, fsh;
 		GLuint vao, bVertex, bIntensity;
