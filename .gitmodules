@@ -1,0 +1,3 @@
+[submodule "vixen"]
+	path = vixen
+	url = git@github.com:zhiyb/vixen.git
