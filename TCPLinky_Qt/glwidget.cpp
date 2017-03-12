@@ -114,9 +114,14 @@ void GLWidget::initializeGL()
 void GLWidget::resizeGL(int w, int h)
 {
 	glViewport(0, 0, w, h);
-	float asp = (float)h / (float)w;
 	data.projection.setToIdentity();
-	data.projection.ortho(-1, 1, -asp, asp, -1, 1);
+	if (w > h) {
+		float asp = (float)w / (float)h;
+		data.projection.ortho(-asp, asp, -1, 1, -1, 1);
+	} else {
+		float asp = (float)h / (float)w;
+		data.projection.ortho(-1, 1, -asp, asp, -1, 1);
+	}
 }
 
 void GLWidget::paintGL()
@@ -163,15 +168,17 @@ void GLWidget::mousePressEvent(QMouseEvent *e)
 
 void GLWidget::mouseMoveEvent(QMouseEvent *e)
 {
+	float s = (float)std::min(width(), height());
 	QPointF p = e->pos() - data.prevPos;
-	data.moveX += -p.x() * 2.f * pow(2, data.zoom) / (double)width();
-	data.moveY += p.y() * 2.f * pow(2, data.zoom) / (double)width();
+	data.moveX += -p.x() * 2.f * pow(2, data.zoom) / s;
+	data.moveY += p.y() * 2.f * pow(2, data.zoom) / s;
 	data.prevPos = e->pos();
 	update();
 }
 
 void GLWidget::keyPressEvent(QKeyEvent *e)
 {
+	float s = (float)std::min(width(), height());
 	const float moveTh = 10;
 	switch (e->key()) {
 	case 'r':	// Refresh
@@ -195,16 +202,16 @@ void GLWidget::keyPressEvent(QKeyEvent *e)
 		data.moveY = 0;
 		break;
 	case Qt::Key_Up:
-		data.moveY += -moveTh * 2.f * pow(2, data.zoom) / (double)width();
+		data.moveY += -moveTh * 2.f * pow(2, data.zoom) / s;
 		break;
 	case Qt::Key_Down:
-		data.moveY += moveTh * 2.f * pow(2, data.zoom) / (double)width();
+		data.moveY += moveTh * 2.f * pow(2, data.zoom) / s;
 		break;
 	case Qt::Key_Left:
-		data.moveX += moveTh * 2.f * pow(2, data.zoom) / (double)width();
+		data.moveX += moveTh * 2.f * pow(2, data.zoom) / s;
 		break;
 	case Qt::Key_Right:
-		data.moveX += -moveTh * 2.f * pow(2, data.zoom) / (double)width();
+		data.moveX += -moveTh * 2.f * pow(2, data.zoom) / s;
 		break;
 	case '+':	// Zoom in
 	case '=':
