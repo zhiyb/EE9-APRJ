@@ -1,0 +1,189 @@
+\documentclass[journal]{IEEEtran}
+
+\usepackage[pdfpagemode={UseOutlines},bookmarks=true,bookmarksopen=true,
+   bookmarksopenlevel=0,bookmarksnumbered=true,hypertexnames=false,
+   colorlinks,linkcolor={blue},citecolor={blue},urlcolor={blue},
+   pdfstartview={FitV},unicode,breaklinks=true]{hyperref}
+
+% *** MATH PACKAGES ***
+\usepackage{amsmath,amssymb}
+
+% *** GRAPHICS RELATED PACKAGES ***
+\ifCLASSINFOpdf
+	\usepackage[pdftex]{graphicx}
+	\graphicspath{{images/}}
+	% \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+	\usepackage[dvips]{graphicx}
+	\graphicspath{{images/}}
+	% \DeclareGraphicsExtensions{.eps}
+\fi
+
+% *** SUBFIGURE PACKAGES ***
+\ifCLASSOPTIONcompsoc
+  \usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+\else
+  \usepackage[caption=false,font=footnotesize]{subfig}
+\fi
+
+\usepackage{listings,color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\newcommand{\fsize}{\small}
+%\newcommand{\fsize}{\tiny}
+\newcommand{\tabsize}{4}
+
+\lstset{frame=tb,
+  language=C++,
+%  aboveskip=0mm,
+  belowskip=0mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\fsize\ttfamily},
+  numberstyle=\fsize\color{gray},
+%  numbers=left,
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=\tabsize
+}
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+\newcommand{\fref}[1]{\figurename~\ref{#1}}
+\newcommand{\eref}[1]{(\ref{#1})}
+\newcommand{\tref}[1]{\tablename~\ref{#1}}
+\newcommand{\lref}[1]{LISTING~\ref{#1}}
+
+\begin{document}
+
+% paper title
+\title{Lightening the Load: A New Playback Engine for Sophisticated Animated Lighting Displays}
+
+% author names and IEEE memberships
+\author{\href{yz4116@imperial.ac.uk}{Yubo~Zhi}\\
+	Project supervisor: \href{james.davis06@imperial.ac.uk}{Dr~James~J.~Davis}}
+
+% The paper headers
+\markboth{MSc individual research project interim report}%
+{MSc individual research project interim report}
+
+% make the title area
+\maketitle
+
+\begin{abstract}
+Vixen 3 is a fully featured, free and open-source application facilitating the design and playback of lighting sequences. It is particularly suited to the animation of Christmas lighting, the variety and flexibility of which have increased dramatically in the past few years. However, as displays become more sophisticated, the original engine will need an increasing amount of processing power for real-time rendering. The aim of this project is to develop a new playback engine for Vixen 3. This engine will reduce runtime computations to enable complex display control on hardware platforms with less processing power, possibly on an embedded device.
+\end{abstract}
+
+\hfill \today
+
+\tableofcontents
+
+\section{Introduction}
+
+Vixen 3 \cite{vixen} is an open-source application for designing and controlling automation lighting displays. With modern technologies, computer-controlled displays are becoming increasingly popular as holiday decorations and other lighting show projects. Vixen is capable of supporting thousands of display channels with complex display effects, optionally with synchronisation to audio playback.
+
+By being open-source, Vixen is primarily built towards low-cost Do-It-Yourself solutions. Together with the support of software plug-ins, users can create customised plug-ins to support a variety of display controllers, or improve the Vixen software itself.
+
+However, the execution engine used by Vixen has some computational overheads. Consequently, a powerful computer with sufficient memory space is required to render the lighting effects in real-time. This may not be possible in some situations, and is very energy inefficient.
+
+To improve the efficiency of real-time playback, a new engine was developed. Instead of having layers of overheads in the original execution engine, the new engine takes pre-rendered sequences directly to display controllers.
+
+\section{Background}
+
+\subsection{Testing platform}
+
+The primary testing platform used in this project is a mid-range laptop running Microsoft Windows. It is capable of developing the Vixen application, but with relatively lower configurations to expose the performance problem of Vixen.
+
+The hardware configurations are listed below:
+
+\begin{description}
+	\item[CPU:]	Intel dual-core i5-3337U @ 1.80 GHz
+	\item[RAM:]	LPDDR3 8.0GB 1600MHz
+	\item[Disk:]	Solid-state drive
+\end{description}
+
+\subsection{Vixen overview}
+
+Contexts are at the very top level of data structures used by Vixen. Vixen stores lighting effects by sequence files, each sequence represents a context to be executed. By using the built-in scheduler, Vixen can load, pre-render and cache multiple sequence contexts at the same time, then scheduled to be repeatedly played afterwards. Vixen has a flexible sequence designing interface with timeline and audio support.
+
+The sequence context contains many elements. Element represent abstract items described by the user, for example lights on trees, lights on roofs, etc. They describe the display setup, independent of hardware controller connections. Elements can also be grouped together for management and some more advanced display effects.
+
+Between elements and hardware controllers, filters are used to map the connections. Patches are used to define data linkages among them. Each element output may be discarded, duplicated or combined by the filters. Vixen has a separate configuration interface for patching the connections.
+
+Inside each hardware controller modules, data from multiple channels will be combined into a single data packet, then send through the appropriate hardware interface, which can be USB, Ethernet, etc. Each controller has its own update thread, with individual update frame rate settings.
+
+\subsection{Microsoft .NET runtime}
+
+Vixen runs on top of Microsoft's .NET runtime library \cite{platt2002introducing}, using C\# \cite{hejlsberg2003c} as the primary programming language. This makes it very difficult for Vixen to run on other operating system platforms. However, with the help of projects like Mono \cite{de2004mono}, it might be possible to have Vixen running on Linux, particularly embedded Linux on embedded platforms. Having Vixen running on an embedded platform can gives greater flexibility and reduces cost.
+
+\section{Evaluation}
+
+\subsection{Original performance}
+
+\fref{fig:original} shows the performance of the original Vixen execution engine. The CPU usage frequently reaches above $90 \%$, while the refresh rate being very unstable around the configured 20 fps. Especially at the first 60 seconds, the refresh rate drops to 5 fps trying to keep up with element updates.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.8\columnwidth]{original}
+    \caption{Performance of Vixen execution engine}
+    \label{fig:original}
+\end{figure}
+
+Further analysis using Microsoft Visual Studio's sampling profiler shows, around $65 \%$ of CPU time was wasted between translation layers for generating controller commands, while the actual command assignment taking less than $1 \%$ of CPU time. There are several different command formats possible, for example 8-bit, 16-bit and RGB channels. Therefore, the application need to resolve the actual format of commands from their base type, which is apparently very inefficient in C\#. This process is called \texttt{dispatch} in the source code, it must be reduced or removed to improve performance.
+
+The implementation of preview display was also inefficient, using around $20 \%$ CPU time in later stages.
+
+\section{Extract rendered sequence}
+
+Instead of trying to improve the original execution engine, the performance problem may be eliminated by playing back stored data frames directly to individual hardware controllers. Thus, two steps are needed. Pre-rendering the sequence with accurate frame interval, then playback the rendered data to the controllers.
+
+\subsection{Custom controller}
+
+A custom controller module was developed based on one of its existing controllers. This controller uses TCP connection to transfer display data, supporting up to 65535 channels. A corresponding server application that simulates a multi-channel display was also developed using C++ and OpenGL \cite{shreiner2009opengl} rendering. Having this configuration allows debugging real-time display output without the need of a complex actual lighting controller setup. Data dumping, performance and statistical analysis can also be easily achieved.
+
+The server application consumes less than $3 \%$ of CPU time under 50 fps refresh rate, which is negligible. It can also be executed on other computers, simulating real world network connection scenarios.
+
+\subsection{Export sequence}
+
+Although the custom controller module is capable of dumping outputs, it would not give the indication of sequence start and end information, and can have unstable frame rates influenced by CPU usage. Therefore, the sequence export function from sequence editor was used to dumping outputs.
+
+The export function was originally used to convert the display sequence to formats recognisable by other applications and controllers. Most importantly, it renders the sequence using a manual timing source, gives accurate constant interval data dumps and controller channel mapping information. A customised data format was added to the export wizard, that can be later used for playback.
+
+\section{The new playback engine}
+
+Based on the exported data format, an independent playback engine was developed and integrated to Vixen.
+
+\subsection{Integration}
+
+A separate menu entry was added to control the new playback engine. When the engine starts, it takes priority over the original execution engine.
+
+\subsection{Audio playback}
+
+\subsection{Scheduler integration}
+
+\section{Future works}
+
+\subsection{Background research}
+
+\subsection{Implementation improvements}
+
+Preview?
+
+\subsection{Embedded platforms}
+
+\subsection{Playback file format}
+
+\section{Conclusion}
+
+% references section
+\bibliographystyle{IEEEtran}
+\bibliography{Reference}
+
+% that's all folks
+\end{document}
