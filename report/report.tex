@@ -118,6 +118,8 @@ Between elements and hardware controllers, filters are used to map the connectio
 
 Inside each hardware controller modules, data from multiple channels will be combined into a single data packet, then send through the appropriate hardware interface, which can be USB, Ethernet, etc. Each controller has its own update thread, with individual update frame rate settings.
 
+Vixen also has a preview display. It maps element outputs to sets of points, possibly arranged as the shapes of actual objects, rendered on a separate window.
+
 \subsection{Microsoft .NET runtime}
 
 Vixen runs on top of Microsoft's .NET runtime library \cite{platt2002introducing}, using C\# \cite{hejlsberg2003c} as the primary programming language. This makes it very difficult for Vixen to run on other operating system platforms. However, with the help of projects like Mono \cite{de2004mono}, it might be possible to have Vixen running on Linux, particularly embedded Linux on embedded platforms. Having Vixen running on an embedded platform can gives greater flexibility and reduces cost.
@@ -159,27 +161,52 @@ The export function was originally used to convert the display sequence to forma
 
 Based on the exported data format, an independent playback engine was developed and integrated to Vixen.
 
+\subsection{Performance}
+
+\fref{fig:playback} shows the performance of the playback engine. At the first and the last few seconds, the playback stopped, the system was using the original execution engine in idle. However, this engine still uses about $30 \%$ of CPU time. But, as soon as playback started, CPU usages drops to around $6 \%$ with stable refresh frame rates.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.8\columnwidth]{playback}
+    \caption{Performance of new playback engine}
+    \label{fig:playback}
+\end{figure}
+
 \subsection{Integration}
 
 A separate menu entry was added to control the new playback engine. When the engine starts, it takes priority over the original execution engine.
 
 \subsection{Audio playback}
 
+The network configuration XML file generated from export was modified to include the audio media file used in the original sequence. This field was later used in the playback engine for audio playback, using the same audio functions from sequence playback.
+
 \subsection{Scheduler integration}
+
+The playback control was also integrated with built-in schedulers. It can therefore be scheduled to execute multiple times at specific time, possibly with original sequence schedules.
+
+The scheduler pre-process all scheduled items first. The sequences need to be pre-rendered, which can take a significant amount of time. The new playback engine does not need pre-process, can be directly executed within seconds.
 
 \section{Future works}
 
 \subsection{Background research}
 
+Further background researches may need to be done, such as analysing other lighting control applications' performances and their implementations.
+
 \subsection{Implementation improvements}
 
-Preview?
+The integration between original execution engine and the new playback engine can be improved. Currently, the playback engine takes priority over the execution engine, which might cause unwanted behaviour under certain circumstances. Playback contexts may also be implemented to cache multiple playback sequences information. The engines should be switched off during idle to further reduce CPU usage.
+
+Support for preview display was not implemented for the playback engine, since the preview works in elements workspace whereas the playback engine works entirely in hardware controller workspace. It might be possible to extract mapping configurations during export, but support for preview is considered optional with lower priority.
 
 \subsection{Embedded platforms}
 
+Porting Vixen, or only the new playback engine, to an embedded platform gives greater flexibility to lighting show projects. It might be possible with open source .NET implementations. Otherwise, using the customised export file format, the playback engine and controllers can be implemented using other programming languages such as C/C++, that is more efficient and appropriate for embedded platforms.
+
 \subsection{Playback file format}
 
-\section{Conclusion}
+Exporting the 06:49 sample sequence in 20 fps results in a 337 MiB data file. It is possible to further reduce the file size by improving data structure and applying compression.
+
+The process of pre-rendering, then playback the sequence is very similar to animated video rendering. The sequences can be exported and playback as videos, by mapping particular video pixels to controller channels. It might be beneficial to support conversion between video files and playback data formats, to allow lighting effects designing using commercially available video editing tools.
 
 % references section
 \bibliographystyle{IEEEtran}
