@@ -5,7 +5,7 @@
 #include <QHostAddress>
 
 // 4 bytes header, 1 byte command, 1 byte stream
-static const uint8_t header[] = {0xde, 0xad, 0xbe, 0xef, 0x01, 0x00};
+static const uint8_t header[] = {0xde, 0xad, 0xbe, 0xef};
 
 #define ZOOMSTEP	0.25
 
@@ -13,7 +13,7 @@ GLWidget::GLWidget(QTcpSocket *socket, QWidget *parent) : QOpenGLWidget(parent)
 {
 	_socket = socket;
 	_bytes = 0;
-	_packet = 0;
+	_update = 0;
 	stat.cTotal = 0;
 	stat.uTotal = 0;
 	stat.pTotal = 0;
@@ -100,9 +100,9 @@ void GLWidget::initializeGL()
 	data.loc.intensity = glGetAttribLocation(data.program, "intensity");
 	glGenBuffers(1, &data.bIntensity);
 	glBindBuffer(GL_ARRAY_BUFFER, data.bIntensity);
-	glBufferData(GL_ARRAY_BUFFER, 65536 * sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 65536 * sizeof(GLuint), 0, GL_DYNAMIC_DRAW);
 	glEnableVertexAttribArray(data.loc.intensity);
-	glVertexAttribPointer(data.loc.intensity, 1, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(data.loc.intensity, 1, GL_UNSIGNED_INT, GL_FALSE, 0, 0);
 	glVertexAttribDivisor(data.loc.intensity, 1);
 
 	data.loc.projection = glGetUniformLocation(data.program, "projection");
@@ -130,11 +130,9 @@ void GLWidget::paintGL()
 	glBindVertexArray(data.vao);
 	if (_update) {
 		glBindBuffer(GL_ARRAY_BUFFER, data.bIntensity);
-		_mutex.lock();
-		glBufferSubData(GL_ARRAY_BUFFER, 0, _channels.size() * sizeof(GLfloat), \
+		glBufferSubData(GL_ARRAY_BUFFER, 0, _channels.size() * sizeof(GLuint), \
 			     _channels.constData());
-		_update = false;
-		_mutex.unlock();
+		_update = 0;
 		//qDebug() << _channels.size() << ceil(sqrt(_channels.size()));
 	}
 
@@ -241,81 +239,94 @@ void GLWidget::disconnected()
 
 void GLWidget::readData()
 {
-	while (_socket->bytesAvailable()) {
-		auto data = _socket->readAll();
-		uint32_t len = data.length();
-		const uint8_t *c = (uint8_t *)data.constData();
-		//qDebug() << __func__ << data << _bytes << header[_bytes] << (uint8_t)*c;
-		while (len) {
-			//qDebug() << len << _bytes << header[_bytes] << (uint8_t)*c;
-			if (_bytes < sizeof(header)) {
-				// Header
-				if (*c != header[_bytes]) {
-					_bytes = *c++ == header[0];
-					len--;
-					qDebug() << "[DATA] Packet header error";
-					continue;
-				}
-				c++;
-				len--;
-				_bytes++;
-			} else if (_bytes == sizeof(header)) {
-				// Channel count low byte
-				_totalCount = *c++;
-				len--;
-				_bytes++;
-			} else if (_bytes == sizeof(header) + 1) {
-				// Channel count high byte
-				_totalCount |= *c++ << 8;
-				len--;
-				_bytes++;
-				// Data
-				uint32_t size = std::min(_totalCount * 3, len);
-				_packet = QByteArray((char *)c, size);
-				_packet.resize(_totalCount * 3);
-				c += size;
-				len -= size;
-				_bytes += size;
-			} else {
-				// Continuous data
-				uint32_t bytes = _bytes - sizeof(header) - 2;
-				uint32_t size = std::min(_totalCount * 3 - bytes, len);
-				_packet.replace(bytes, size, (char *)c, size);
-				c += size;
-				len -= size;
-				_bytes += size;
-			}
-			if (_bytes == sizeof(header) + 2 + _totalCount * 3) {
-				// Packet complete
-				// Statistics
-				if (_bytes > stat.maxSize) {
-					stat.maxSize = _bytes;
-					stat.maxUpdates = _totalCount;
-				}
-				stat.cTotal += _bytes;
-				stat.uTotal += _totalCount;
-				stat.pTotal++;
-				// Update channels
-				while (_totalCount--) {
-					const uint8_t *p = (uint8_t *)_packet.constData() + _totalCount * 3;
-					uint32_t channel = (uint32_t)*p++;
-					channel |= (uint32_t)(*p++) << 8;
-					if ((uint32_t)_channels.size() <= channel)
-						_channels.resize(channel + 1);
-					_channels[channel] = (float)*p / 255.f;
-					//qDebug() << __func__ << _totalCount << channel << _channels[channel];
-				}
-				_mutex.lock();
-				_update = true;
-				_mutex.unlock();
-				//qDebug() << __func__ << _channels.count();
-				_totalCount = 0;
-				_bytes = 0;
-				//qDebug() << "[DATA] Packet of" << _packet->size() << "bytes";
-				update();
-			}
+loop:
+	if (!_socket->bytesAvailable())
+		return;
+	switch (_bytes) {
+	case 0 ... (sizeof(header) - 1):
+		// Header
+		uint8_t c;
+		_socket->read((char *)&c, 1);
+		if (c != header[_bytes]) {
+			_bytes = c == header[0];
+			qDebug() << "[DATA] Packet header error";
+		} else
+			_bytes++;
+		break;
+	case sizeof(header):
+		// Command
+		_socket->read((char *)&_command, 1);
+		_bytes++;
+
+		switch (_command) {
+		case 0x01:
+		case 0x02:
+			break;
+		default:
+			_bytes = 0;
+			qDebug() << "[DATA] Packet command error";
+			goto loop;
 		}
+		break;
+	case sizeof(header) + 1:
+		// Target stream
+		_socket->read((char *)&_stream, 1);
+		_bytes++;
+		break;
+	case sizeof(header) + 2:
+		// Channel count
+		if (_socket->bytesAvailable() < 2)
+			return;
+		_socket->read((char *)&_chCount, 2);
+		_bytes += 2;
+
+		switch (_command) {
+		case 0x01:
+			_payloadSize = _chCount * 3;
+			break;
+		case 0x02:
+			_payloadSize = _chCount;
+			if ((uint32_t)_channels.size() <_chCount)
+				_channels.resize(_chCount);
+			break;
+		}
+		break;
+	case sizeof(header) + 4:
+		// Data
+		if (_socket->bytesAvailable() < _payloadSize)
+			return;
+		_bytes += _payloadSize;
+		QByteArray ba = _socket->read(_payloadSize);
+		uint8_t *p = (uint8_t *)ba.constData();
+		switch (_command) {
+		case 0x01:
+			while (_payloadSize) {
+				uint16_t channel = (*(p + 1) << 8) | *p;
+				p += 2;
+				_payloadSize -= 3;
+				if ((uint32_t)_channels.size() <= channel)
+					_channels.resize(channel + 1);
+				uint8_t v = *p++;
+				_channels[channel] = v;
+			}
+			break;
+		case 0x02:
+			for (uint32_t i = 0; i != _payloadSize; i++)
+				_channels[i] = *p++;
+			break;
+		}
+		_update = 1;
+		update();
+		if (_bytes > stat.maxSize) {
+			stat.maxSize = _bytes;
+			stat.maxUpdates = _chCount;
+		}
+		stat.cTotal += _bytes;
+		stat.uTotal += _chCount;
+		stat.pTotal++;
+		_bytes = 0;
 	}
+	goto loop;
 }
 
 GLuint GLWidget::loadShader(GLenum type, const QByteArray& context)

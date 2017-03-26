@@ -7,7 +7,7 @@ uniform mat4 projection;
 uniform float zoom;
 uniform int dimension;
 
-in float intensity;
+in uint intensity;
 out vec3 colour;
 
 void main(void)
@@ -17,5 +17,5 @@ void main(void)
 	vec2 offset = vec2(ivec2(gl_InstanceID % dimension, gl_InstanceID / dimension)) * size;
 	pos.xy = pos.xy + offset - vec2(1.0, 1.0) - move;
 	gl_Position = projection * vec4(pos * zoom, 1.0);
-	colour = vec3(intensity);
+	colour = vec3(float(intensity) / 255.0);
 }

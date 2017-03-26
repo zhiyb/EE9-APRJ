@@ -32,11 +32,12 @@ private:
 	GLuint loadShaderFile(GLenum type, QString path);
 
 	QTcpSocket *_socket;
-	uint32_t _bytes, _totalCount;
-	QByteArray _packet;
-	QVector<GLfloat> _channels;
-	bool _update;
-	QMutex _mutex;
+	uint32_t _bytes, _payloadSize;
+	uint16_t _chCount;
+	uint8_t _command, _stream;
+
+	QVector<GLuint> _channels;
+	QAtomicInt _update;
 
 	struct data_t {
 		struct loc_t {
