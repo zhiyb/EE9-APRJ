@@ -6,20 +6,14 @@
 #define ASIZE(a)	(sizeof(a) / sizeof((a)[0]))
 #define SPACING	6
 
-// 4 bytes header, 1 byte command, 1 byte stream
-static const uint8_t header[] = {0xde, 0xad, 0xbe, 0xef, 0x02, 0x00};
-
-MainW::MainW() : QMainWindow()
+MainW::MainW(): QMainWindow()
 {
 #if 0
-	clock_getres(CLOCK_MONOTONIC, &_t);
-	qDebug("CLOCK_MONOTONIC res: %lu, %lu", _t.tv_sec, _t.tv_nsec);
-	clock_gettime(CLOCK_MONOTONIC, &_t);
-	qDebug("CLOCK_MONOTONIC time: %lu, %lu", _t.tv_sec, _t.tv_nsec);
+	struct timespec t;
+	clock_getres(CLOCK_MONOTONIC, &t);
+	qDebug("CLOCK_MONOTONIC res: %lu, %lu", t.tv_sec, t.tv_nsec);
 #endif
-	_skipped = 0;
-	_frames = 0;
-
+	worker.init(this);
 	setCaption(tr("Vixen Qt2 demo"));
 
 	QWidget *w = new QWidget(this);
@@ -44,7 +38,7 @@ MainW::MainW() : QMainWindow()
 	vLay->addLayout(hLay);
 
 	hLay->addWidget(new QLabel(tr("Resolution:"), w));
-	hLay->addWidget(sbResolution = new QSpinBox(5, 1000, 5, w));
+	hLay->addWidget(sbResolution = new QSpinBox(10, 1000, 5, w));
 	sbResolution->setValue(20);
 	sbResolution->setMinimumWidth(32);
 	hLay->addWidget(new QLabel(tr("Start:"), w));
@@ -59,9 +53,9 @@ MainW::MainW() : QMainWindow()
 	hLay->setSpacing(SPACING);
 	vLay->addLayout(hLay);
 
-	hLay->addWidget(new QLabel("Host:", w));
+	hLay->addWidget(new QLabel(tr("Host:"), w));
 	hLay->addWidget(leHost = new QLineEdit("192.168.2.1", w));
-	hLay->addWidget(new QLabel("Port:", w));
+	hLay->addWidget(new QLabel(tr("Port:"), w));
 	hLay->addWidget(lePort = new QLineEdit("12345", w));
 	lePort->setMaxLength(5);
 	lePort->setMaximumWidth(48);
@@ -80,6 +74,7 @@ MainW::MainW() : QMainWindow()
 	pbStop->setEnabled(false);
 	hLay->addWidget(pbStatus = new QProgressBar(w));
 	pbStatus->setCenterIndicator(true);
+	hLay->addWidget(lTime = new QLabel("00:00:00", w));
 
 	// Instrumentation displays
 	QGridLayout *gLay = new QGridLayout;
@@ -88,10 +83,23 @@ MainW::MainW() : QMainWindow()
 		"total", "user", "nice", "system",
 		"idle", "iowait", "irq", "softirq",
 	};
+	int idx = 0;
 	for (int i = 0; i != ASIZE(perfNames); i++) {
-		gLay->addWidget(new QLabel(tr(perfNames[i]), w), i / 3, 2 * (i % 3));
-		gLay->addWidget(cpu.pb[i] = new QProgressBar(100, w), i / 3, 2 * (i % 3) + 1);
+#if 0
+		switch (i) {
+		case 1:	// user
+		case 2:	// nice
+		case 3:	// system
+		case 6:	// irq
+		case 7:	// softirq
+			cpu.pb[i] = 0;
+			continue;
+		}
+#endif
+		gLay->addWidget(new QLabel(perfNames[i], w), idx / 3, 2 * (idx % 3));
+		gLay->addWidget(cpu.pb[i] = new QProgressBar(100, w), idx / 3, 2 * (idx % 3) + 1);
 		cpu.pb[i]->setCenterIndicator(true);
+		idx++;
 	}
 
 	vLay->addWidget(lSkipped = new QLabel(tr("Statistics"), w));
@@ -106,11 +114,9 @@ MainW::MainW() : QMainWindow()
 
 	connect(sbStart, SIGNAL(valueChanged(int)), this, SLOT(updateChannels(int)));
 
-	socket = new QSocket(this);
-
-	connect(socket, SIGNAL(connected()), this, SLOT(connected()));
-	connect(socket, SIGNAL(error(int)), this, SLOT(connectionClosed()));
-	connect(socket, SIGNAL(connectionClosed()), this, SLOT(connectionClosed()));
+	connect(&worker.socket, SIGNAL(connected()), this, SLOT(connected()));
+	connect(&worker.socket, SIGNAL(error(int)), this, SLOT(connectionClosed()));
+	connect(&worker.socket, SIGNAL(connectionClosed()), this, SLOT(connectionClosed()));
 
 	// Instrumentation
 	cpu.now = &cpu.stat[0];
@@ -118,15 +124,21 @@ MainW::MainW() : QMainWindow()
 	cpuPerf();
 	*cpu.prev = *cpu.now;
 
-	timer.progress = startTimer(1000);
-	timer.perf = startTimer(3000);
+	timer.progress = startTimer(500);
+	timer.perf = startTimer(2000);
 }
 
 void MainW::timerEvent(QTimerEvent *e)
 {
 	if (e->timerId() == timer.progress) {
 		// Playback progress
-		pbStatus->setProgress(f.at());
+		if (worker.isOpen())
+			pbStatus->setProgress(worker.at());
+		if (worker._frames == 0l || worker._resolution == 0u)
+			return;
+		unsigned long sec = (worker._frames + worker._skipped) * worker._resolution / 1000ul;
+		lTime->setText(QTime().addSecs(sec).toString());
+		lSkipped->setText(QString("diff ms: %1").arg(worker.diffms()));
 	} else if (e->timerId() == timer.perf) {
 		// CPU usages
 		cpuPerf();
@@ -136,18 +148,19 @@ void MainW::timerEvent(QTimerEvent *e)
 		unsigned long diffIdle = 0;
 		for (int i = 0; i != 7; i++) {
 			unsigned long diff = cpu.now->val[i] - cpu.prev->val[i];
-			cpu.pb[i + 1]->setProgress((diff * 100 + 50) / diffTotal);
+			if (cpu.pb[i + 1])
+				cpu.pb[i + 1]->setProgress((diff * 100 + 50) / diffTotal);
 			if (i == 3)
 				diffIdle = diff;
 		}
 		cpu.pb[0]->setProgress(((diffTotal - diffIdle) * 100 + 50) / diffTotal);
-
-		if (_frames == 0l || _resolution == 0u)
-			return;
-		unsigned long fps = 1000l * 100l * _frames / (_frames + _skipped) / _resolution;
-		lSkipped->setText(tr("Skipped: %1, avg. fps: %2.%3").arg(_skipped)
-				.arg(fps / 100).arg(fps % 100));
 	}
+}
+
+void MainW::customEvent(QCustomEvent *e)
+{
+	if (e->data() == 0)
+		stop();
 }
 
 void MainW::cpuPerf()
@@ -161,12 +174,11 @@ void MainW::cpuPerf()
 	if (str != "cpu")
 		return;
 
-	MainW::cpu_t::stat_t *stat = cpu.prev;
+	std::swap(cpu.prev, cpu.now);
+	MainW::cpu_t::stat_t *stat = cpu.now;
 	for (int i = 0; i != 7; i++)
 		s >> stat->val[i];
 	f.close();
-
-	std::swap(cpu.prev, cpu.now);
 }
 
 void MainW::open()
@@ -174,34 +186,36 @@ void MainW::open()
 	QString path = QFileDialog::getOpenFileName(lePath->text());
 	lePath->setText(path);
 
-	if (f.isOpen())
-		closeFile();
-	f.setName(path);
-	if (f.open(IO_Raw | IO_ReadOnly)) {
-		s.setDevice(&f);
-		readFrame();
-		stop();
+	worker.close();
+	stop();
+	pbStop->setEnabled(false);
+	pbStatus->setProgress(0);
+	pbStatus->setTotalSteps(0);
+	if (worker.open(path)) {
 		sbStart->setMinValue(1u);
-		sbStart->setMaxValue(_chCount);
+		sbStart->setMaxValue(worker._chCount);
 		sbStart->setValue(8669u);
 		sbChannels->setValue(sbChannels->maxValue());
-
-		pbStatus->setTotalSteps(f.size());
-		pbStatus->setProgress(f.at());
+		pbStatus->setTotalSteps(worker.size());
+		pbStatus->setProgress(worker.at());
 	}
+	pbStart->setEnabled(worker.isOpen());
 }
 
 void MainW::connectTo(bool e)
 {
 	if (e)
-		socket->connectToHost(leHost->text(), lePort->text().toUShort());
-	else
-		socket->close();
+		worker.socket.connectToHost(leHost->text(), lePort->text().toUShort());
+	else {
+		worker.socket.close();
+		stop();
+	}
 }
 
 void MainW::connected()
 {
 	pbConnect->setOn(true);
+	pbStart->setEnabled(worker.isOpen());
 }
 
 void MainW::connectionClosed()
@@ -212,112 +226,27 @@ void MainW::connectionClosed()
 
 void MainW::updateChannels(int v)
 {
-	sbChannels->setMaxValue(_chCount - v + 1u);
+	sbChannels->setMaxValue(worker._chCount - v + 1u);
 }
 
 void MainW::start()
 {
-	if (!f.isOpen() || socket->state() != QSocket::Connection)
+	if (!worker.isOpen())
 		return;
 
-	f.at(0);
-	pbStatus->setProgress(f.at());
+	pbStatus->setProgress(worker.at());
 	pbStart->setEnabled(false);
-	pbStop->setEnabled(f.isOpen());
+	pbStop->setEnabled(worker.isOpen());
 
-	_resolution = sbResolution->value();
-	_sendStart = sbStart->value() - 1u;
-	_sendChannels = sbChannels->value();
-	_skipped = 0;
-	_frames = 0;
-	_started = true;
-
-	clock_gettime(CLOCK_MONOTONIC, &_start);
-	QTimer::singleShot(sbResolution->value(), this, SLOT(next()));
+	worker._resolution = sbResolution->value();
+	worker._sendStart = sbStart->value() - 1u;
+	worker._sendChannels = sbChannels->value();
+	worker.start();
 }
 
 void MainW::stop()
 {
-	_started = false;
-	pbStart->setEnabled(f.isOpen());
+	worker.stop();
+	pbStart->setEnabled(worker.isOpen());
 	pbStop->setEnabled(false);
-}
-
-void MainW::next()
-{
-	if (socket->state() != QSocket::Connection)
-		stop();
-
-read:
-	readFrame();
-	if (s.atEnd())
-		stop();
-
-#define MS	(1000l)
-#define NS	(1000l * 1000l * 1000l)
-
-	if (_started) {
-		struct timespec t;
-		clock_gettime(CLOCK_MONOTONIC, &t);
-		t.tv_sec -= _start.tv_sec;
-		t.tv_nsec -= _start.tv_nsec;
-		t.tv_nsec += t.tv_sec * NS;
-
-		_start.tv_nsec += _resolution * 1000ul * 1000ul;
-		while (_start.tv_nsec >= NS) {
-			_start.tv_sec++;
-			_start.tv_nsec -= NS;
-		}
-
-		long ms = t.tv_nsec / 1000000ul;
-		if (ms > (long)_resolution) {
-			_skipped++;
-			goto read;
-		}
-		ms = std::max(ms, 4l);
-		QTimer::singleShot(_resolution - ms, this, SLOT(next()));
-	}
-
-	sendFrame();
-}
-
-void MainW::readFrame()
-{
-	// Headers, command and stream
-	uint32_t len = 0;
-	while (len != sizeof(header)) {
-		uint8_t c;
-		s.readRawBytes((char *)&c, 1);
-		if (s.atEnd())
-			return;
-		if (c != header[len++]) {
-			len = c == header[0] ? 1 : 0;
-			qDebug("Data header error");
-		}
-	}
-
-	// Channel number
-	s.readRawBytes((char *)&_chCount, 2);
-	if (_data.size() < _chCount)
-		_data.resize(_chCount);
-
-	s.readRawBytes(_data.data(), _chCount);
-}
-
-void MainW::sendFrame()
-{
-	socket->writeBlock((char *)header, sizeof(header));
-	socket->writeBlock((char *)&_sendChannels, 2);
-	socket->writeBlock(_data.data() + _sendStart, _sendChannels);
-	socket->flush();
-	_frames++;
-}
-
-void MainW::closeFile()
-{
-	f.close();
-	pbStart->setEnabled(f.isOpen());
-	pbStop->setEnabled(f.isOpen());
-	pbStatus->setProgress(0);
-	pbStatus->setTotalSteps(0);
 }

@@ -1,7 +1,7 @@
 # Author: Yubo Zhi (normanzyb@gmail.com)
 
 PRG	= demo
-SRC	= main.cpp mainw.cpp
+SRC	= main.cpp mainw.cpp worker.cpp
 MOCH	= mainw.h
 SUBDIRS = 
 VERSION	= 0.0.1
@@ -9,8 +9,8 @@ VERSION	= 0.0.1
 #CROSS	= mipsel-linux-
 OPTIMIZE	= -O3
 STRIP	:= true
-DEFS	= -DQWS -pipe -fno-exceptions -fno-rtti -Wall -Wno-non-virtual-dtor -Werror
-LIBS	= -Wl,-rpath,/opt/qt-2.3.10.new/lib -lqpe -lqte -lrt
+DEFS	= -DQWS -DQT_THREAD_SUPPORT -pipe -fno-exceptions -fno-rtti -Wall -Wno-non-virtual-dtor -Werror
+LIBS	= -Wl,-rpath,/opt/qt-2.3.10.new/lib -lqpe -lqte -lqte-mt -lrt
 
 #QTDIR	= /root/qt/qt-2.3.10.mipsel
 #QPEDIR	= /root/qt/qtopia-free-1.5.0.mipsel
@@ -33,7 +33,7 @@ MOC	= $(QTDIR)/bin/moc
 LUPDATE	= lupdate
 LRELEASE	= lrelease
 
-CFLAGS	= -g -c $(DEFS) $(OPTIMIZE) -I$(QTINC) -I$(QPEINC)
+CFLAGS	= -g -c $(DEFS) $(OPTIMIZE) -I$(QTINC) -I$(QPEINC) -I$(QTDIR)/src/3rdparty/freetype/include
 LDFLAGS	= -g $(LIBS) -L$(QTLIB) -L$(QPELIB)
 
 all: subdirs $(MOCC) $(PRG)

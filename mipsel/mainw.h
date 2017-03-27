@@ -2,9 +2,11 @@
 #define MAINW_H
 
 #include <stdint.h>
+#include <time.h>
 #include <qt.h>
+#include "worker.h"
 
-class MainW : public QMainWindow
+class MainW: public QMainWindow
 {
 	Q_OBJECT
 public:
@@ -12,6 +14,7 @@ public:
 
 protected:
 	void timerEvent(QTimerEvent *e);
+	void customEvent(QCustomEvent *e);
 
 private slots:
 	void open();
@@ -21,13 +24,11 @@ private slots:
 	void updateChannels(int v);
 	void start();
 	void stop();
-	void next();
 
 private:
 	void cpuPerf();
-	void sendFrame();
-	void readFrame();
-	void closeFile();
+
+	Worker worker;
 
 	QLineEdit *lePath;
 	QSpinBox *sbResolution, *sbStart, *sbChannels;
@@ -35,19 +36,7 @@ private:
 	QPushButton *pbBrowse, *pbConnect;
 	QPushButton *pbStart, *pbStop;
 	QProgressBar *pbStatus;
-	QLabel *lSkipped;
-
-	QSocket *socket;
-
-	QFile f;
-	QDataStream s;
-
-	bool _opened, _started;
-	unsigned long _resolution, _frames, _skipped;
-	uint16_t _chCount, _sendStart, _sendChannels;
-	QByteArray _data;
-
-	struct timespec _start;
+	QLabel *lTime, *lSkipped;
 
 	struct {
 		int progress, perf;
