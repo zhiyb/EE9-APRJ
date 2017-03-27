@@ -7,7 +7,7 @@ SUBDIRS =
 VERSION	= 0.0.1
 
 #CROSS	= mipsel-linux-
-OPTIMIZE	= -Os
+OPTIMIZE	= -O3
 STRIP	:= true
 DEFS	= -DQWS -pipe -fno-exceptions -fno-rtti -Wall -Wno-non-virtual-dtor -Werror
 LIBS	= -Wl,-rpath,/opt/qt-2.3.10.new/lib -lqpe -lqte -lrt

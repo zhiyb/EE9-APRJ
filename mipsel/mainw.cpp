@@ -1,7 +1,9 @@
+#include <algorithm>
 #include <stdint.h>
 #include <time.h>
 #include "mainw.h"
 
+#define ASIZE(a)	(sizeof(a) / sizeof((a)[0]))
 #define SPACING	6
 
 // 4 bytes header, 1 byte command, 1 byte stream
@@ -15,6 +17,8 @@ MainW::MainW() : QMainWindow()
 	clock_gettime(CLOCK_MONOTONIC, &_t);
 	qDebug("CLOCK_MONOTONIC time: %lu, %lu", _t.tv_sec, _t.tv_nsec);
 #endif
+	_skipped = 0;
+	_frames = 0;
 
 	setCaption(tr("Vixen Qt2 demo"));
 
@@ -44,13 +48,11 @@ MainW::MainW() : QMainWindow()
 	sbResolution->setValue(20);
 	sbResolution->setMinimumWidth(32);
 	hLay->addWidget(new QLabel(tr("Start:"), w));
-	hLay->addWidget(sbStart = new QSpinBox(0, 0, 0, w));
+	hLay->addWidget(sbStart = new QSpinBox(0, 0, 1, w));
 	sbStart->setMinimumWidth(48);
-	sbStart->setLineStep(1);
 	hLay->addWidget(new QLabel(tr("CHs:"), w));
-	hLay->addWidget(sbChannels = new QSpinBox(0, 0, 0, w));
+	hLay->addWidget(sbChannels = new QSpinBox(0, 0, 1, w));
 	sbChannels->setMinimumWidth(48);
-	sbChannels->setLineStep(1);
 
 	// Host connection
 	hLay = new QHBoxLayout;
@@ -82,6 +84,17 @@ MainW::MainW() : QMainWindow()
 	// Instrumentation displays
 	QGridLayout *gLay = new QGridLayout;
 	vLay->addLayout(gLay);
+	static const char *perfNames[] = {
+		"total", "user", "nice", "system",
+		"idle", "iowait", "irq", "softirq",
+	};
+	for (int i = 0; i != ASIZE(perfNames); i++) {
+		gLay->addWidget(new QLabel(tr(perfNames[i]), w), i / 3, 2 * (i % 3));
+		gLay->addWidget(cpu.pb[i] = new QProgressBar(100, w), i / 3, 2 * (i % 3) + 1);
+		cpu.pb[i]->setCenterIndicator(true);
+	}
+
+	vLay->addWidget(lSkipped = new QLabel(tr("Statistics"), w));
 
 	// Done
 	vLay->addStretch(1);
@@ -104,13 +117,37 @@ MainW::MainW() : QMainWindow()
 	cpu.prev = &cpu.stat[1];
 	cpuPerf();
 	*cpu.prev = *cpu.now;
-	startTimer(500);
+
+	timer.progress = startTimer(1000);
+	timer.perf = startTimer(3000);
 }
 
-void MainW::timerEvent(QTimerEvent *)
+void MainW::timerEvent(QTimerEvent *e)
 {
-	pbStatus->setProgress(f.at());
-	cpuPerf();
+	if (e->timerId() == timer.progress) {
+		// Playback progress
+		pbStatus->setProgress(f.at());
+	} else if (e->timerId() == timer.perf) {
+		// CPU usages
+		cpuPerf();
+		unsigned long diffTotal = cpu.now->total() - cpu.prev->total();
+		if (diffTotal == 0)
+			return;
+		unsigned long diffIdle = 0;
+		for (int i = 0; i != 7; i++) {
+			unsigned long diff = cpu.now->val[i] - cpu.prev->val[i];
+			cpu.pb[i + 1]->setProgress((diff * 100 + 50) / diffTotal);
+			if (i == 3)
+				diffIdle = diff;
+		}
+		cpu.pb[0]->setProgress(((diffTotal - diffIdle) * 100 + 50) / diffTotal);
+
+		if (_frames == 0l || _resolution == 0u)
+			return;
+		unsigned long fps = 1000l * 100l * _frames / (_frames + _skipped) / _resolution;
+		lSkipped->setText(tr("Skipped: %1, avg. fps: %2.%3").arg(_skipped)
+				.arg(fps / 100).arg(fps % 100));
+	}
 }
 
 void MainW::cpuPerf()
@@ -123,10 +160,13 @@ void MainW::cpuPerf()
 	s >> str;
 	if (str != "cpu")
 		return;
+
 	MainW::cpu_t::stat_t *stat = cpu.prev;
 	for (int i = 0; i != 7; i++)
 		s >> stat->val[i];
 	f.close();
+
+	std::swap(cpu.prev, cpu.now);
 }
 
 void MainW::open()
@@ -141,8 +181,9 @@ void MainW::open()
 		s.setDevice(&f);
 		readFrame();
 		stop();
-		sbStart->setMaxValue(_chCount - 1u);
-		sbStart->setValue(8669);
+		sbStart->setMinValue(1u);
+		sbStart->setMaxValue(_chCount);
+		sbStart->setValue(8669u);
 		sbChannels->setValue(sbChannels->maxValue());
 
 		pbStatus->setTotalSteps(f.size());
@@ -171,7 +212,7 @@ void MainW::connectionClosed()
 
 void MainW::updateChannels(int v)
 {
-	sbChannels->setMaxValue(_chCount - v + 1);
+	sbChannels->setMaxValue(_chCount - v + 1u);
 }
 
 void MainW::start()
@@ -184,9 +225,12 @@ void MainW::start()
 	pbStart->setEnabled(false);
 	pbStop->setEnabled(f.isOpen());
 
-	_started = true;
-	_sendStart = sbStart->value();
+	_resolution = sbResolution->value();
+	_sendStart = sbStart->value() - 1u;
 	_sendChannels = sbChannels->value();
+	_skipped = 0;
+	_frames = 0;
+	_started = true;
 
 	clock_gettime(CLOCK_MONOTONIC, &_start);
 	QTimer::singleShot(sbResolution->value(), this, SLOT(next()));
@@ -204,15 +248,37 @@ void MainW::next()
 	if (socket->state() != QSocket::Connection)
 		stop();
 
+read:
 	readFrame();
 	if (s.atEnd())
 		stop();
 
-	sendFrame();
+#define MS	(1000l)
+#define NS	(1000l * 1000l * 1000l)
 
-	clock_gettime(CLOCK_MONOTONIC, &_t);
-	if (_started)
-		QTimer::singleShot(sbResolution->value(), this, SLOT(next()));
+	if (_started) {
+		struct timespec t;
+		clock_gettime(CLOCK_MONOTONIC, &t);
+		t.tv_sec -= _start.tv_sec;
+		t.tv_nsec -= _start.tv_nsec;
+		t.tv_nsec += t.tv_sec * NS;
+
+		_start.tv_nsec += _resolution * 1000ul * 1000ul;
+		while (_start.tv_nsec >= NS) {
+			_start.tv_sec++;
+			_start.tv_nsec -= NS;
+		}
+
+		long ms = t.tv_nsec / 1000000ul;
+		if (ms > (long)_resolution) {
+			_skipped++;
+			goto read;
+		}
+		ms = std::max(ms, 4l);
+		QTimer::singleShot(_resolution - ms, this, SLOT(next()));
+	}
+
+	sendFrame();
 }
 
 void MainW::readFrame()
@@ -240,12 +306,11 @@ void MainW::readFrame()
 
 void MainW::sendFrame()
 {
-	if (socket->bytesToWrite())
-		return;
 	socket->writeBlock((char *)header, sizeof(header));
 	socket->writeBlock((char *)&_sendChannels, 2);
 	socket->writeBlock(_data.data() + _sendStart, _sendChannels);
 	socket->flush();
+	_frames++;
 }
 
 void MainW::closeFile()
