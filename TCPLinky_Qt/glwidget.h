@@ -15,11 +15,12 @@ protected:
 	void initializeGL();
 	void resizeGL(int w, int h);
 	void paintGL();
-	void closeEvent(QCloseEvent *event);
+	void closeEvent(QCloseEvent *e);
 	void wheelEvent(QWheelEvent *e);
 	void mousePressEvent(QMouseEvent *e);
 	void mouseMoveEvent(QMouseEvent *e);
 	void keyPressEvent(QKeyEvent *e);
+	void timerEvent(QTimerEvent *e);
 
 private slots:
 	void disconnected();
@@ -60,6 +61,12 @@ private:
 		uint32_t uTotal;
 		uint32_t maxSize, maxUpdates;
 	} stat;
+
+	struct report_fps_t {
+		QTime timer;
+		unsigned long counter;
+		float fps;
+	} reportFPS;
 };
 
 #endif // GLWIDGET_H

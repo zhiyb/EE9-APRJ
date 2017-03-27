@@ -38,6 +38,8 @@ GLWidget::GLWidget(QTcpSocket *socket, QWidget *parent) : QOpenGLWidget(parent)
 	setAutoFillBackground(false);
 	resize(640, 640);
 	setWindowTitle(socket->peerAddress().toString());
+
+	startTimer(5000);	// FPS timer
 }
 
 void GLWidget::initializeGL()
@@ -109,6 +111,10 @@ void GLWidget::initializeGL()
 	data.loc.zoom = glGetUniformLocation(data.program, "zoom");
 	data.loc.move = glGetUniformLocation(data.program, "move");
 	data.loc.dimension = glGetUniformLocation(data.program, "dimension");
+
+	reportFPS.fps = 0.f;
+	reportFPS.counter = 0;
+	reportFPS.timer.start();
 }
 
 void GLWidget::resizeGL(int w, int h)
@@ -146,9 +152,9 @@ void GLWidget::paintGL()
 	glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, _channels.size());
 }
 
-void GLWidget::closeEvent(QCloseEvent *event)
+void GLWidget::closeEvent(QCloseEvent *e)
 {
-	Q_UNUSED(event);
+	Q_UNUSED(e);
 	_socket->disconnectFromHost();
 }
 
@@ -221,6 +227,16 @@ void GLWidget::keyPressEvent(QKeyEvent *e)
 		break;
 	};
 	update();
+}
+
+void GLWidget::timerEvent(QTimerEvent *e)
+{
+	Q_UNUSED(e);
+	if (reportFPS.timer.elapsed()) {
+		reportFPS.fps = (float)(reportFPS.counter * 1000) / (float)reportFPS.timer.restart();
+		reportFPS.counter = 0;
+		setWindowTitle(_socket->peerAddress().toString() + QString(" <%1 fps>").arg(reportFPS.fps));
+	}
 }
 
 void GLWidget::disconnected()
@@ -325,6 +341,7 @@ loop:
 		stat.uTotal += _chCount;
 		stat.pTotal++;
 		_bytes = 0;
+		reportFPS.counter++;
 	}
 	goto loop;
 }
