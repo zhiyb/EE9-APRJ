@@ -1,0 +1,19 @@
+SHELL	= /bin/bash
+LOGS	= $(wildcard Instrumentation_*.log)
+TRGS	= $(LOGS:.log=.csv)
+
+.PHONY: all
+all: $(TRGS)
+
+.DELETE_ON_ERROR:
+%.csv: %.log
+	head="$$(head -n 1 "$<" | sed 's/:.*//')"; \
+	head="$$(grep -nF -m2 "$$head" "$<" | tail -n 1 | sed 's/:.*//')"; \
+	head="$$(head -n "$$(($$head - 1))" "$<" | sed 's/[:,]\s*/\n/g')"; \
+	echo "$$head" | sed 's/^[0-9].*//;s/ [0-9].*//;s/.*/"\0",/' > "$@.0"; \
+	head="$$(echo "$$head" | wc -l)"; \
+	sed 's/[:,]\s*/\n/g' "$<" | sed 's/[^0-9]*\([0-9.]*\).*/\1/;s/.*/\0,/' | split -d -l "$$head" - "$@."; \
+	ls -1 "$@."* | while read file; do \
+		cat "$$file" | xargs; \
+	done > "$@"; \
+	rm "$@."*
