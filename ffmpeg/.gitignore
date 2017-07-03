@@ -1,0 +1,7 @@
+dec_enc
+avio_reading
+encoding
+metadata
+*.o
+*.pgm
+*.mp4
