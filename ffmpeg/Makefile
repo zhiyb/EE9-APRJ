@@ -40,21 +40,28 @@ $(PRG): %: %.o
 .PHONY: test
 test: out.enc.enc.mp4
 
-SEQ	= /mnt/nas/Vixen/luf2016_the-ark_20ms_short
+SEQ	= /mnt/nas/Vixen/luf2016_the-ark_20ms
 
 .PHONY: diff
-diff: out.enc.mp4 out.enc.enc.mp4
-	ffprobe out.enc.mp4 2>&1 | tail
+diff: out.mp4 out.enc.enc.mp4
+	ffprobe out.mp4 2>&1 | tail
 	ffprobe out.enc.enc.mp4 2>&1 | tail
 	-diff $^
 	-diff out.raw out.enc.raw
 	-diff out.raw $(SEQ).raw
+
+.PHONY: vimdiff
+vimdiff: out.hd out.enc.hd
+	vimdiff $^
 
 out.mp4: encoding $(SEQ)_Network.xml
 	./$^ $@ libx264
 
 %.raw: decoding %.mp4
 	./$^ $@
+
+%.hd: %.raw
+	hd $< > $@
 
 %.enc.mp4: encoding %.raw
 	./$< $*.xml $@ libx264

@@ -104,22 +104,10 @@ AVFormatContext *open_output(const char *file, const char *codec_name,
 	c->width = (ch + c->height - 1u) / c->height;
 	c->width = (c->width + 1u) & ~1u;
 	out_stream->time_base = c->time_base = (AVRational){n->resolution, 1000};
-	/* put sample parameters */
-	c->bit_rate = 8 * c->width * c->height * (1000 / n->resolution);
-	c->bit_rate_tolerance = c->bit_rate;
-	clog << "S: " << c->width << "x" << c->height
-		<< ", B: " << c->bit_rate << endl;
-	/* emit one intra frame every ten frames
-	 * check frame pict_type before passing frame
-	 * to encoder, if frame->pict_type is AV_PICTURE_TYPE_I
-	 * then gop_size is ignored and the output of encoder
-	 * will always be I frame irrespective to gop_size
-	 */
-	c->gop_size = 10;
-	c->max_b_frames = 1;
 	c->pix_fmt = AV_PIX_FMT_YUV444P;
 	if (codec->id == AV_CODEC_ID_H264)
-		av_opt_set(c->priv_data, "preset", "slow", 0);
+		if (av_opt_set_double(c->priv_data, "crf", 0, 0) != 0)
+			av_log(NULL, AV_LOG_WARNING, "Cannot set crf option\n");
 
 	/* open it */
 	if (avcodec_open2(c, codec, NULL) < 0) {

@@ -119,7 +119,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	unsigned long frames = 0;
 	AVPacket pkt;
 	while (av_read_frame(fmt_ctx, &pkt) >= 0) {
 		int got_frame;
@@ -140,7 +139,6 @@ int main(int argc, char *argv[])
 		printf("%ld, ", pts);
 #endif
 		// TODO: Read channel number from metadata
-		if (frames++ <= 2)
 		write_output(fs, oframe, c->width * c->height, 8669 + 8600 - 1);
 	}
 
