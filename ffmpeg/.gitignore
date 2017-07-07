@@ -1,7 +1,12 @@
 dec_enc
 avio_reading
 encoding
+decoding
 metadata
 *.o
 *.pgm
 *.mp4
+*.hd
+*.head
+*.raw
+*.xml

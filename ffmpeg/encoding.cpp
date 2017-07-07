@@ -23,53 +23,6 @@ using namespace std;
 
 static const uint8_t header[6] = {0xde, 0xad, 0xbe, 0xef, 0x02, 0x00};
 
-#if 0
-/*
- * Video encoding example
- */
-static void video_encode_example(const char *filename, int codec_id)
-{
-	int i, ret, x, y, got_output;
-
-	/* encode 1 second of video */
-	for (i = 0; i < 25; i++) {
-		av_init_packet(&pkt);
-		pkt.data = NULL;    // packet data will be allocated by the encoder
-		pkt.size = 0;
-
-		/* encode the image */
-		ret = avcodec_encode_video2(c, &pkt, frame, &got_output);
-		if (ret < 0) {
-			fprintf(stderr, "Error encoding frame\n");
-			exit(1);
-		}
-
-		if (got_output) {
-			printf("Write frame %3d (size=%5d)\n", i, pkt.size);
-			fwrite(pkt.data, 1, pkt.size, f);
-			av_free_packet(&pkt);
-		}
-	}
-
-	/* get the delayed frames */
-	for (got_output = 1; got_output; i++) {
-		fflush(stdout);
-
-		ret = avcodec_encode_video2(c, &pkt, NULL, &got_output);
-		if (ret < 0) {
-			fprintf(stderr, "Error encoding frame\n");
-			exit(1);
-		}
-
-		if (got_output) {
-			printf("Write frame %3d (size=%5d)\n", i, pkt.size);
-			fwrite(pkt.data, 1, pkt.size, f);
-			av_free_packet(&pkt);
-		}
-	}
-}
-#endif
-
 typedef struct network_t {
 	int resolution;
 	string file;
@@ -112,7 +65,7 @@ bool network_parse(network_t *n, const char *file)
 			channels = c > channels ? c : channels;
 		}
 	}
-	n->channels = start + channels;
+	n->channels = start + channels - 1u;
 	xmlFreeTextReader(reader);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to parse %s\n", file);
@@ -131,12 +84,6 @@ AVFormatContext *open_output(const char *file, const char *codec_name,
 		return 0;
 	}
 
-	AVStream *out_stream = avformat_new_stream(fmt_ctx, NULL);
-	if (!out_stream) {
-		cerr << "Failed allocating output stream" << endl;
-		return 0;
-	}
-
 	AVCodec *codec = avcodec_find_encoder_by_name(codec_name);
 	if (!codec) {
 		fprintf(stderr, "Encoder %s not recognised\n", codec_name);
@@ -144,16 +91,22 @@ AVFormatContext *open_output(const char *file, const char *codec_name,
 	}
 	printf("Encode %s using %s\n", file, codec->long_name);
 
-	AVCodecContext *c = out_stream->codec = avcodec_alloc_context3(codec);
-	/* put sample parameters */
-	c->bit_rate = 8 * n->channels * (1000 / n->resolution);
+	AVStream *out_stream = avformat_new_stream(fmt_ctx, codec);
+	if (!out_stream) {
+		cerr << "Failed allocating output stream" << endl;
+		return 0;
+	}
+
+	AVCodecContext *c = out_stream->codec;
 	/* resolution must be a multiple of two */
 	int ch = (n->channels + 2) / 3;		// Rounding
 	c->height = (unsigned int)round(sqrt(ch)) & ~1u;
 	c->width = (ch + c->height - 1u) / c->height;
 	c->width = (c->width + 1u) & ~1u;
-	/* frames per second */
-	c->time_base = (AVRational){n->resolution, 1000};
+	out_stream->time_base = c->time_base = (AVRational){n->resolution, 1000};
+	/* put sample parameters */
+	c->bit_rate = 8 * c->width * c->height * (1000 / n->resolution);
+	c->bit_rate_tolerance = c->bit_rate;
 	clog << "S: " << c->width << "x" << c->height
 		<< ", B: " << c->bit_rate << endl;
 	/* emit one intra frame every ten frames
@@ -189,15 +142,14 @@ AVFormatContext *open_output(const char *file, const char *codec_name,
 	return fmt_ctx;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
-	char *input, *output, *codec_name;
-
 	if (argc < 4) {
 		printf("usage: %s input_xml output_file codec\n",
 				argv[0]);
 		return 1;
 	}
+	char *input, *output, *codec_name;
 	input = argv[1];
 	output = argv[2];
 	codec_name = argv[3];
@@ -211,9 +163,10 @@ int main(int argc, char **argv)
 		cerr << "No channels defined" << endl;
 		return 1;
 	}
+	AVRational time_base = {n.resolution, 1000};
 
 	string ifile(string(dirname(input)) + "/" + n.file);
-	ifstream ifs(ifile);
+	ifstream ifs(ifile, ifstream::binary);
 	if (!ifs.good()) {
 		cerr << "Unable to open " << ifile << " for read";
 		return 1;
@@ -244,6 +197,9 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Could not allocate raw picture buffer\n");
 		return 1;
 	}
+	memset(frame->data[0], 0, frame->linesize[0] * frame->height);
+	memset(frame->data[1], 0, frame->linesize[1] * frame->height);
+	memset(frame->data[2], 0, frame->linesize[2] * frame->height);
 
 #if 0	// Use channel data as YUV directly
 	SwsContext *sws_ctx = sws_getContext(c->width, c->height,
@@ -257,12 +213,7 @@ int main(int argc, char **argv)
 
 	// Frame processing
 	uint8_t buf[8];
-	uint8_t *chdata = (uint8_t *)malloc(n.channels + 3);
-	if (!chdata) {
-		av_log(NULL, AV_LOG_ERROR, "Failed allocating channel buffer");
-		return 0;
-	}
-	int64_t pts = -1;
+	int64_t pts = 0;
 	while (ifs.read((char *)buf, sizeof(buf)).good()) {
 		for (int i = 0; i != sizeof(header); i++)
 			if (buf[i] != header[i]) {
@@ -271,18 +222,24 @@ int main(int argc, char **argv)
 			}
 		uint16_t chs;
 		memcpy(&chs, &buf[sizeof(buf) - 2], 2);
-		if (!ifs.read((char *)chdata, chs).good())
-			break;
 
-		for (int i = 0; i != (chs + 2) / 3; i++) {
-			int x = i % frame->width;
-			int y = i / frame->height;
-			// Y, Cb and Cr
-			frame->data[0][y * frame->linesize[0] + x] = chdata[i * 3];
-			frame->data[1][y * frame->linesize[1] + x] = chdata[i * 3 + 1];
-			frame->data[2][y * frame->linesize[2] + x] = chdata[i * 3 + 2];
+		int y = 0, n = 0, ch = chs;
+		while (ch) {
+			int s = min(frame->width, ch);
+			ifs.read((char *)&frame->data[n][y * frame->linesize[n]], s);
+			ch -= s;
+			if (++y == frame->height) {
+				y = 0;
+				n++;
+			}
 		}
-		frame->pts = ++pts;
+		frame->pts = av_rescale_q_rnd(pts++,
+				time_base,
+				fmt_ctx->streams[0]->time_base,
+				(AVRounding)(AV_ROUND_NEAR_INF |
+				AV_ROUND_PASS_MINMAX));
+		if (!ifs.good())
+			break;
 
 		AVPacket pkt;
 		av_init_packet(&pkt);
@@ -301,25 +258,33 @@ int main(int argc, char **argv)
 
 		// Prepare packet for muxing
 		pkt.stream_index = 0;
-		pkt.dts = av_rescale_q_rnd(pkt.dts,
-				fmt_ctx->streams[0]->codec->time_base,
-				fmt_ctx->streams[0]->time_base,
-				(AVRounding)(AV_ROUND_NEAR_INF |
-				AV_ROUND_PASS_MINMAX));
-		pkt.pts = av_rescale_q_rnd(pkt.pts,
-				fmt_ctx->streams[0]->codec->time_base,
-				fmt_ctx->streams[0]->time_base,
-				(AVRounding)(AV_ROUND_NEAR_INF |
-					AV_ROUND_PASS_MINMAX));
-		pkt.duration = av_rescale_q(pkt.duration,
-				fmt_ctx->streams[0]->codec->time_base,
-				fmt_ctx->streams[0]->time_base);
+		if (av_interleaved_write_frame(fmt_ctx, &pkt) < 0)
+			break;
+	}
+
+	for (;;) {
+		AVPacket pkt;
+		av_init_packet(&pkt);
+		// packet data will be allocated by the encoder
+		pkt.data = NULL;
+		pkt.size = 0;
+
+		/* encode the image */
+		int got_output = 0;
+		if (avcodec_encode_video2(c, &pkt, NULL, &got_output) < 0) {
+			av_log(NULL, AV_LOG_ERROR, "Error encoding frame");
+			break;
+		}
+		if (!got_output)
+			break;
+
+		// Prepare packet for muxing
+		pkt.stream_index = 0;
 		if (av_interleaved_write_frame(fmt_ctx, &pkt) < 0)
 			break;
 	}
 
 	av_write_trailer(fmt_ctx);
-	free(chdata);
 
 #if 0
 	sws_freeContext(sws_ctx);

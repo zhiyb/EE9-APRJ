@@ -1,6 +1,6 @@
 # Author: Yubo Zhi (normanzyb@gmail.com)
 
-PRG	= dec_enc avio_reading metadata encoding
+PRG	= dec_enc avio_reading metadata encoding decoding
 
 #CROSS	= mipsel-linux-
 OPTIMIZE	= -g -O3
@@ -8,7 +8,7 @@ CFLAGS		= -Wall -std=c99 -U__STRICT_ANSI__ -I/usr/include/libxml2 \
 		  -Wno-deprecated-declarations
 CXXFLAGS	= -Wall -std=c++11 -I/usr/include/libxml2 \
 		  -Wno-deprecated-declarations
-LIBS	= -lavformat -lavcodec -lavutil -lswscale -lxml2 -lm
+LIBS	= -lavformat -lavfilter -lavcodec -lavutil -lswscale -lxml2 -lm
 
 CC	= $(CROSS)gcc
 CXX	= $(CROSS)g++
@@ -33,6 +33,31 @@ $(PRG): %: %.o
 	$(CXX) -MM $(CXXFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
+
+.SECONDARY:
+.DELETE_ON_ERROR:
+
+.PHONY: test
+test: out.enc.enc.mp4
+
+SEQ	= /mnt/nas/Vixen/luf2016_the-ark_20ms_short
+
+.PHONY: diff
+diff: out.enc.mp4 out.enc.enc.mp4
+	ffprobe out.enc.mp4 2>&1 | tail
+	ffprobe out.enc.enc.mp4 2>&1 | tail
+	-diff $^
+	-diff out.raw out.enc.raw
+	-diff out.raw $(SEQ).raw
+
+out.mp4: encoding $(SEQ)_Network.xml
+	./$^ $@ libx264
+
+%.raw: decoding %.mp4
+	./$^ $@
+
+%.enc.mp4: encoding %.raw
+	./$< $*.xml $@ libx264
 
 # Clean up
 .PHONY: clean
