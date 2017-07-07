@@ -75,7 +75,7 @@ bool network_parse(network_t *n, const char *file)
 }
 
 AVFormatContext *open_output(const char *file, const char *codec_name,
-		network_t *n)
+		const char *pix_fmt_name, network_t *n)
 {
 	AVFormatContext *fmt_ctx;
 	if (avformat_alloc_output_context2(&fmt_ctx, NULL, NULL, file) < 0) {
@@ -89,7 +89,6 @@ AVFormatContext *open_output(const char *file, const char *codec_name,
 		fprintf(stderr, "Encoder %s not recognised\n", codec_name);
 		return 0;
 	}
-	printf("Encode %s using %s\n", file, codec->long_name);
 
 	AVStream *out_stream = avformat_new_stream(fmt_ctx, codec);
 	if (!out_stream) {
@@ -104,7 +103,8 @@ AVFormatContext *open_output(const char *file, const char *codec_name,
 	c->width = (ch + c->height - 1u) / c->height;
 	c->width = (c->width + 1u) & ~1u;
 	out_stream->time_base = c->time_base = (AVRational){n->resolution, 1000};
-	c->pix_fmt = AV_PIX_FMT_YUV444P;
+	if (pix_fmt_name != 0)
+		c->pix_fmt = av_get_pix_fmt(pix_fmt_name);
 	if (codec->id == AV_CODEC_ID_H264)
 		if (av_opt_set_double(c->priv_data, "crf", 0, 0) != 0)
 			av_log(NULL, AV_LOG_WARNING, "Cannot set crf option\n");
@@ -127,20 +127,24 @@ AVFormatContext *open_output(const char *file, const char *codec_name,
 		av_log(NULL, AV_LOG_ERROR, "Error occurred when opening output file");
 		return 0;
 	}
+
+	printf("Encoding %s using %s, format %s\n", file, codec->long_name,
+			av_get_pix_fmt_name(c->pix_fmt));
 	return fmt_ctx;
 }
 
 int main(int argc, char *argv[])
 {
-	if (argc < 4) {
-		printf("usage: %s input_xml output_file codec\n",
+	if (argc < 5) {
+		printf("usage: %s input_xml output_file codec pix_fmt\n",
 				argv[0]);
 		return 1;
 	}
-	char *input, *output, *codec_name;
+	char *input, *output, *codec_name, *pix_fmt_name = 0;
 	input = argv[1];
 	output = argv[2];
 	codec_name = argv[3];
+	pix_fmt_name = argv[4];
 
 	network_t n;
 	if (!network_parse(&n, input))
@@ -162,7 +166,7 @@ int main(int argc, char *argv[])
 
 	av_register_all();
 
-	AVFormatContext *fmt_ctx = open_output(output, codec_name, &n);
+	AVFormatContext *fmt_ctx = open_output(output, codec_name, pix_fmt_name, &n);
 	if (!fmt_ctx)
 		return 1;
 

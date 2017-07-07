@@ -41,6 +41,8 @@ $(PRG): %: %.o
 test: out.enc.enc.mp4
 
 SEQ	= /mnt/nas/Vixen/luf2016_the-ark_20ms
+#CODEC	= libx264 yuv444p
+CODEC	= libx264rgb rgb24
 
 .PHONY: diff
 diff: out.mp4 out.enc.enc.mp4
@@ -59,7 +61,7 @@ psnr: psnr.sh out.mp4 out.enc.enc.mp4
 	./$^
 
 out.mp4: encoding $(SEQ)_Network.xml
-	./$^ $@ libx264
+	./$^ $@ $(CODEC)
 
 %.raw: decoding %.mp4
 	./$^ $@
@@ -68,7 +70,7 @@ out.mp4: encoding $(SEQ)_Network.xml
 	hd $< > $@
 
 %.enc.mp4: encoding %.raw
-	./$< $*.xml $@ libx264
+	./$< $*.xml $@ $(CODEC)
 
 # Clean up
 .PHONY: clean
