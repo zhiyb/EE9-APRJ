@@ -54,6 +54,10 @@ diff: out.mp4 out.enc.enc.mp4
 vimdiff: out.hd out.enc.hd
 	vimdiff $^
 
+.PHONY: psnr
+psnr: psnr.sh out.mp4 out.enc.enc.mp4
+	./$^
+
 out.mp4: encoding $(SEQ)_Network.xml
 	./$^ $@ libx264
 

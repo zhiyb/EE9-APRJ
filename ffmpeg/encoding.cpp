@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
 
 	AVFrame *frame = av_frame_alloc();
 	if (!frame) {
-		fprintf(stderr, "Could not allocate video frame\n");
+		fprintf(stderr, "Cannot allocate video frame\n");
 		return 1;
 	}
 
@@ -182,22 +182,35 @@ int main(int argc, char *argv[])
 	 * just the most convenient way if av_malloc() is to be used */
 	if (av_image_alloc(frame->data, frame->linesize, c->width, c->height,
 			c->pix_fmt, 32) < 0) {
-		fprintf(stderr, "Could not allocate raw picture buffer\n");
+		fprintf(stderr, "Cannot allocate frame buffer\n");
 		return 1;
 	}
-	memset(frame->data[0], 0, frame->linesize[0] * frame->height);
-	memset(frame->data[1], 0, frame->linesize[1] * frame->height);
-	memset(frame->data[2], 0, frame->linesize[2] * frame->height);
 
-#if 0	// Use channel data as YUV directly
-	SwsContext *sws_ctx = sws_getContext(c->width, c->height,
-			AV_PIX_FMT_RGB24, c->width, c->height,
-			AV_PIX_FMT_YUV420P, 0, 0, 0, 0);
-	if (!sws_ctx) {
-		av_log(NULL, AV_LOG_ERROR, "Failed allocating swscale context");
-		return 0;
+	// Allocate input frame buffer (packed RGB)
+	AVFrame *iframe = av_frame_alloc();
+	if (!iframe) {
+		fprintf(stderr, "Cannot allocate input frame\n");
+		return 1;
 	}
-#endif
+
+	iframe->format = AV_PIX_FMT_RGB24;
+	iframe->width = c->width;
+	iframe->height = c->height;
+
+	if (av_image_alloc(iframe->data, iframe->linesize, c->width, c->height,
+			(AVPixelFormat)iframe->format, 32) < 0) {
+		fprintf(stderr, "Cannot allocate input frame buffer\n");
+		return 1;
+	}
+
+	// Create format converter
+	SwsContext *sc = sws_getContext(c->width, c->height, (AVPixelFormat)iframe->format,
+			c->width, c->height, c->pix_fmt,
+			0, NULL, NULL, NULL);
+	if (!sc) {
+		av_log(NULL, AV_LOG_ERROR, "Cannot create format converter\n");
+		return 1;
+	}
 
 	// Frame processing
 	uint8_t buf[8];
@@ -211,23 +224,24 @@ int main(int argc, char *argv[])
 		uint16_t chs;
 		memcpy(&chs, &buf[sizeof(buf) - 2], 2);
 
-		int y = 0, n = 0, ch = chs;
-		while (ch) {
-			int s = min(frame->width, ch);
-			ifs.read((char *)&frame->data[n][y * frame->linesize[n]], s);
-			ch -= s;
-			if (++y == frame->height) {
-				y = 0;
-				n++;
-			}
+		uint8_t *ptr = iframe->data[0];
+		while (chs) {
+			unsigned int s = min((unsigned int)chs, iframe->width * 3u);
+			ifs.read((char *)ptr, s);
+			chs -= s;
+			ptr += iframe->linesize[0];
 		}
+		if (!ifs.good())
+			break;
+
+		sws_scale(sc, iframe->data, iframe->linesize, 0, c->height,
+				frame->data, frame->linesize);
+
 		frame->pts = av_rescale_q_rnd(pts++,
 				time_base,
 				fmt_ctx->streams[0]->time_base,
 				(AVRounding)(AV_ROUND_NEAR_INF |
 				AV_ROUND_PASS_MINMAX));
-		if (!ifs.good())
-			break;
 
 		AVPacket pkt;
 		av_init_packet(&pkt);
@@ -274,9 +288,9 @@ int main(int argc, char *argv[])
 
 	av_write_trailer(fmt_ctx);
 
-#if 0
-	sws_freeContext(sws_ctx);
-#endif
+	sws_freeContext(sc);
+	av_freep(iframe->data);
+	av_frame_free(&iframe);
 	av_freep(frame->data);
 	av_frame_free(&frame);
 	if (fmt_ctx && !(fmt_ctx->oformat->flags & AVFMT_NOFILE))

@@ -53,16 +53,16 @@ AVFormatContext *open_input(const char *file, int *stream)
 	return fmt_ctx;
 }
 
-void write_output(ofstream &fs, uint8_t *frame[3],
-		unsigned long size, uint16_t channels)
+void write_output(ofstream &fs, AVFrame *frame, uint16_t channels)
 {
 	fs.write((char *)header, sizeof(header));
 	fs.write((char *)&channels, 2u);
-	int n = 0;
+	uint8_t *ptr = frame->data[0];
 	while (channels) {
-		int s = min(size, (unsigned long)channels);
-		fs.write((char *)frame[n++], s);
+		unsigned int s = min((unsigned int)channels, frame->width * 3u);
+		fs.write((char *)ptr, s);
 		channels -= s;
+		ptr += frame->linesize[0];
 	}
 }
 
@@ -92,33 +92,41 @@ int main(int argc, char *argv[])
 		return 1;
 	AVCodecContext *c = fmt_ctx->streams[stream]->codec;
 
+	// Allocate input frame
+	AVFrame *frame = av_frame_alloc();
+	if (!frame) {
+		av_log(NULL, AV_LOG_ERROR, "Cannot allocate frame buffer\n");
+		return 1;
+	}
+
+	// Allocate output frame buffer (packed RGB)
+	AVFrame *oframe = av_frame_alloc();
+	if (!oframe) {
+		av_log(NULL, AV_LOG_ERROR, "Cannot allocate output frame\n");
+		return 1;
+	}
+
+	oframe->format = AV_PIX_FMT_RGB24;
+	oframe->width = c->width;
+	oframe->height = c->height;
+
+	if (av_image_alloc(oframe->data, oframe->linesize, c->width, c->height,
+			(AVPixelFormat)oframe->format, 32) < 0) {
+		av_log(NULL, AV_LOG_ERROR, "Cannot allocate output frame buffer\n");
+		return 1;
+	}
+
+	// Create format converter
 	// TODO: Test different algorithms
 	SwsContext *sc = sws_getContext(c->width, c->height, c->pix_fmt,
-			c->width, c->height, AV_PIX_FMT_YUV444P,
-			SWS_BICUBIC, NULL, NULL, NULL);
+			c->width, c->height, (AVPixelFormat)oframe->format,
+			0, NULL, NULL, NULL);
 	if (!sc) {
 		av_log(NULL, AV_LOG_ERROR, "Cannot create format converter\n");
 		return 1;
 	}
 
-	const int olinesize[3] = {c->width, c->width, c->width};
-	uint8_t *oframe[3];
-	oframe[0] = (uint8_t *)malloc(c->width * c->height);
-	oframe[1] = (uint8_t *)malloc(c->width * c->height);
-	oframe[2] = (uint8_t *)malloc(c->width * c->height);
-	if (!oframe[0] || !oframe[1] || !oframe[2]) {
-		av_log(NULL, AV_LOG_ERROR, "Cannot allocate output frame buffer\n");
-		sws_freeContext(sc);
-		return 1;
-	}
-
-	AVFrame *frame = av_frame_alloc();
-	if (!frame) {
-		sws_freeContext(sc);
-		av_log(NULL, AV_LOG_ERROR, "Cannot allocate frame buffer\n");
-		return 1;
-	}
-
+	// Frame processing
 	AVPacket pkt;
 	while (av_read_frame(fmt_ctx, &pkt) >= 0) {
 		int got_frame;
@@ -129,7 +137,7 @@ int main(int argc, char *argv[])
 		}
 		if (got_frame)
 			sws_scale(sc, frame->data, frame->linesize, 0, c->height,
-					oframe, olinesize);
+					oframe->data, oframe->linesize);
 #if 0
 		int64_t pts = av_rescale_q_rnd(frame->pts,
 				fmt_ctx->streams[stream]->time_base,
@@ -139,13 +147,12 @@ int main(int argc, char *argv[])
 		printf("%ld, ", pts);
 #endif
 		// TODO: Read channel number from metadata
-		write_output(fs, oframe, c->width * c->height, 8669 + 8600 - 1);
+		write_output(fs, oframe, 8669 + 8600 - 1);
 	}
 
 	sws_freeContext(sc);
-	free(oframe[0]);
-	free(oframe[1]);
-	free(oframe[2]);
+	av_freep(oframe->data);
+	av_frame_free(&oframe);
 	av_frame_free(&frame);
 	avformat_free_context(fmt_ctx);
 	return 0;
