@@ -1,24 +1,37 @@
 # Author: Yubo Zhi (normanzyb@gmail.com)
 
 PRG	= dec_enc avio_reading metadata encoding decoding
+LIB	= libcodec.so
+EXE	= test.exe
 
 #CROSS	= mipsel-linux-
-OPTIMIZE	= -g -O3
-CFLAGS		= -Wall -std=c99 -U__STRICT_ANSI__ -I/usr/include/libxml2 \
+OPTIMIZE	:= -g -O3
+CFLAGS		:= -Wall -std=c99 -U__STRICT_ANSI__ -I/usr/include/libxml2 \
+		  -Wno-deprecated-declarations -Wno-unused-variable \
+		  $(LIBCFLAGS)
+CXXFLAGS	:= -Wall -std=c++11 -I/usr/include/libxml2 \
 		  -Wno-deprecated-declarations
-CXXFLAGS	= -Wall -std=c++11 -I/usr/include/libxml2 \
-		  -Wno-deprecated-declarations
-LIBS	= -lavformat -lavfilter -lavcodec -lavutil -lswscale -lxml2 -lm
+LIBS	+= -lavformat -lavfilter -lavcodec -lavutil -lswscale -lxml2 -lm
 
 CC	= $(CROSS)gcc
 CXX	= $(CROSS)g++
 LD	= $(CROSS)g++
 
 .PHONY: all
-all: $(PRG)
+all: $(PRG) $(EXE) libs
+
+.PHONY: libs
+libs:
+	$(MAKE) $(LIB) LIBCFLAGS=-fPIC
 
 $(PRG): %: %.o
 	$(LD) $(OPTIMIZE) -o $@ $^ $(LIBS)
+
+%.exe: %.cs | libs
+	mcs /out:$@ $< /r:System.dll
+
+lib%.so: %.o
+	$(CXX) -shared $(OPTIMIZE) -o $@ $^ $(LIBS)
 
 %.o: %.cpp
 	$(CXX) -c $(OPTIMIZE) $(CXXFLAGS) -o $@ $<
@@ -45,15 +58,15 @@ SEQ	= /mnt/nas/Vixen/luf2016_the-ark_20ms
 CODEC	= libx264rgb rgb24
 
 .PHONY: diff
-diff: out.mp4 out.enc.enc.mp4
-	ffprobe out.mp4 2>&1 | tail
+diff: out.test_enc.test_dec.enc.mp4 | out.enc.enc.mp4
 	ffprobe out.enc.enc.mp4 2>&1 | tail
-	-diff $^
-	-diff out.raw out.enc.raw
-	-diff out.raw $(SEQ).raw
+	-diff out.mp4 out.enc.enc.mp4
+	ffprobe out.mp4 2>&1 | tail
+	-diff out.mp4 $<
+	-diff $(SEQ).raw $(<:%.enc.mp4=%.raw)
 
 .PHONY: vimdiff
-vimdiff: out.hd out.enc.hd
+vimdiff: out.hd out.test.hd
 	vimdiff $^
 
 .PHONY: psnr
@@ -63,16 +76,26 @@ psnr: psnr.sh out.mp4 out.enc.enc.mp4
 out.mp4: encoding $(SEQ)_Network.xml
 	./$^ $@ $(CODEC)
 
+%.test_dec.raw: test.exe %.mp4
+	mono $^ $@
+
 %.raw: decoding %.mp4
 	./$^ $@
 
 %.hd: %.raw
 	hd $< > $@
 
+%.test_enc.mp4: test.exe %.xml
+	mono $^ $@
+
 %.enc.mp4: encoding %.raw
 	./$< $*.xml $@ $(CODEC)
+
+%.xml: %.raw
+	touch $@
 
 # Clean up
 .PHONY: clean
 clean:
-	rm -f $(PRG) $(PRG:%=%.o) $(PRG:%=%.d) $(PRG:%=%.d.*)
+	rm -f $(PRG) $(PRG:%=%.o) $(PRG:%=%.d) $(PRG:%=%.d.*) \
+		$(LIB) $(LIB:lib%.so=%.o) $(EXE)

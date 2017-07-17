@@ -4,6 +4,8 @@ encoding
 decoding
 metadata
 *.o
+*.so
+*.exe
 *.pgm
 *.mp4
 *.hd
