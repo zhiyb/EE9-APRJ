@@ -27,8 +27,10 @@ libs:
 $(PRG): %: %.o
 	$(LD) $(OPTIMIZE) -o $@ $^ $(LIBS)
 
-%.exe: %.cs | libs
+%.exe: %.cs
 	mcs /out:$@ $< /r:System.dll
+
+test.exe: libcodec.so
 
 lib%.so: %.o
 	$(CXX) -shared $(OPTIMIZE) -o $@ $^ $(LIBS)
@@ -58,7 +60,7 @@ SEQ	= /mnt/nas/Vixen/luf2016_the-ark_20ms
 CODEC	= libx264rgb rgb24
 
 .PHONY: diff
-diff: out.test_enc.test_dec.enc.mp4 | out.enc.enc.mp4
+diff: out.test_enc.test_dec.enc.mp4 out.enc.enc.mp4
 	ffprobe out.enc.enc.mp4 2>&1 | tail
 	-diff out.mp4 out.enc.enc.mp4
 	ffprobe out.mp4 2>&1 | tail
@@ -85,11 +87,11 @@ out.mp4: encoding $(SEQ)_Network.xml
 %.hd: %.raw
 	hd $< > $@
 
-%.test_enc.mp4: test.exe %.xml
+%.test_enc.mp4: test.exe %_Network.xml
 	mono $^ $@
 
 %.enc.mp4: encoding %.raw
-	./$< $*.xml $@ $(CODEC)
+	./$< $*_Network.xml $@ $(CODEC)
 
 %.xml: %.raw
 	touch $@

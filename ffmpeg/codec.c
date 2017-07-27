@@ -21,7 +21,7 @@ typedef struct data_t {
 	AVFrame *iframe, *oframe;
 	struct SwsContext *sc;
 	AVPacket pkt;
-	int resolution, channels;
+	int resolution;
 	int pts;
 	void *data;
 } data_t;
@@ -35,16 +35,6 @@ void init()
 int version()
 {
 	return 0x1234;
-}
-
-int resolution(void *dp)
-{
-	return ((data_t *)dp)->resolution;
-}
-
-int channels(void *dp)
-{
-	return ((data_t *)dp)->channels;
 }
 
 static void free_data(data_t *data)
@@ -104,6 +94,7 @@ static data_t *encode_allocate(AVCodecContext *c)
 		av_log(NULL, AV_LOG_ERROR, "Cannot allocate input frame buffer\n");
 		goto error;
 	}
+	memset(iframe->data[0], 0, c->height * iframe->linesize[0]);
 
 	// Create format converter
 	sc = sws_getContext(c->width, c->height, iframe->format,
@@ -138,7 +129,8 @@ error:
 }
 
 void *encode_open_output(const char *file, const char *codec_name,
-		const char *pix_fmt_name, const int resolution, const int channels)
+		const char *pix_fmt_name, const int resolution, const int channels,
+		const char *comment)
 {
 	AVFormatContext *fmt_ctx;
 	if (avformat_alloc_output_context2(&fmt_ctx, NULL, NULL, file) < 0) {
@@ -184,6 +176,10 @@ void *encode_open_output(const char *file, const char *codec_name,
 		}
 	}
 
+	// Add comment to metadata
+	if (comment)
+		av_dict_set(&fmt_ctx->metadata, "comment", comment, 0);
+
 	/* init muxer, write output file header */
 	if (avformat_write_header(fmt_ctx, NULL) < 0) {
 		av_log(NULL, AV_LOG_ERROR, "Error occurred when opening output file");
@@ -198,7 +194,6 @@ void *encode_open_output(const char *file, const char *codec_name,
 	data->fmt_ctx = fmt_ctx;
 	data->c = c;
 	data->resolution = resolution;
-	data->channels = channels;
 	return data;
 }
 
@@ -281,7 +276,7 @@ void encode_close(void *dp)
 /* }}} */
 
 /* {{{ Decode */
-static data_t *decode_allocate(AVCodecContext *c, int channels)
+static data_t *decode_allocate(AVCodecContext *c)
 {
 	AVFrame *iframe = 0, *oframe = 0;
 	struct SwsContext *sc = 0;
@@ -324,9 +319,6 @@ static data_t *decode_allocate(AVCodecContext *c, int channels)
 	data = (data_t *)calloc(1, sizeof(data_t));
 	if (!data)
 		goto error;
-	data->data = malloc(channels);
-	if (!data->data)
-		goto error;
 	av_init_packet(&data->pkt);
 	data->iframe = iframe;
 	data->oframe = oframe;
@@ -351,7 +343,7 @@ error:
 	return 0;
 }
 
-void *decode_open_input(const char *file)
+void *decode_open_input(const char *file, char **comment)
 {
 	int stream;
 	AVFormatContext *fmt_ctx = NULL;
@@ -378,25 +370,27 @@ void *decode_open_input(const char *file)
 		av_log(NULL, AV_LOG_ERROR, "Failed to open video codec\n");
 		return 0;
 	}
+
+	if (comment) {
+		AVDictionaryEntry *tag = av_dict_get(fmt_ctx->metadata, "comment", NULL, 0);
+		*comment = tag ? tag->value : NULL;
+	}
+
 	av_dump_format(fmt_ctx, stream, file, 0);
 
 	// TODO: Read channel number from metadata
-	int channels = 8669 + 8600 - 1;
-	data_t *data = decode_allocate(c, channels);
+	data_t *data = decode_allocate(c);
 	if (!data)
 		return 0;
 	data->fmt_ctx = fmt_ctx;
 	data->c = c;
-	data->channels = channels;
-	// TODO: Read resolution value from metadata
-	data->resolution = 20;
 	return data;
 }
 
-static void *decode_write_output(data_t *data)
+static void *decode_write_output(data_t *data, int channels)
 {
+	data->data = realloc(data->data, channels);
 	AVFrame *iframe = data->iframe, *oframe = data->oframe;
-	int channels = data->channels;
 	unsigned int w = oframe->width * 3u;
 	uint8_t *ptr = oframe->data[0], *dptr = data->data;
 	while (channels) {
@@ -409,7 +403,7 @@ static void *decode_write_output(data_t *data)
 	return data->data;
 }
 
-void *decode_read_frame(void *dp, int *got)
+void *decode_read_frame(void *dp, int channels, int *got)
 {
 	data_t *data = dp;
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
@@ -430,7 +424,7 @@ void *decode_read_frame(void *dp, int *got)
 	if (got_frame)
 		sws_scale(sc, (void *)iframe->data, iframe->linesize, 0, c->height,
 				oframe->data, oframe->linesize);
-	return decode_write_output(data);
+	return decode_write_output(data, channels);
 }
 
 void decode_close(void *dp)

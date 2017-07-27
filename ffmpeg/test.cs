@@ -14,15 +14,9 @@ public class codec
 	[DllImport("codec.dll")]
 	public static extern void init();
 
-	[DllImport("codec.dll")]
-	public static extern int resolution(IntPtr data);
-
-	[DllImport("codec.dll")]
-	public static extern int channels(IntPtr data);
-
-	[DllImport("codec.dll")]
+	[DllImport("codec.dll", CharSet = CharSet.Ansi)]
 	public static extern IntPtr encode_open_output(string file, string codec_name,
-			string pix_fmt_name, int resolution, int channels);
+			string pix_fmt_name, int resolution, int channels, string comment);
 
 	[DllImport("codec.dll")]
 	public static extern int encode_write_frame(IntPtr data, byte[] frame, int channels);
@@ -31,10 +25,10 @@ public class codec
 	public static extern void encode_close(IntPtr data);
 
 	[DllImport("codec.dll")]
-	public static extern IntPtr decode_open_input(string file);
+	public static extern IntPtr decode_open_input(string file, ref IntPtr comment);
 
 	[DllImport("codec.dll")]
-	public static extern IntPtr decode_read_frame(IntPtr data, out int got);
+	public static extern IntPtr decode_read_frame(IntPtr data, int channels, out int got);
 
 	[DllImport("codec.dll")]
 	public static extern void decode_close(IntPtr data);
@@ -110,20 +104,38 @@ public class HelloWorld
 		return br.ReadBytes(channels);
 	}
 
+	private static string xmlCompact(string content)
+	{
+		XmlDocument doc = new XmlDocument();
+		doc.LoadXml(content);
+		var strWriter = new StringWriter();
+		using (XmlTextWriter writer = new XmlTextWriter(strWriter)) {
+			writer.Formatting = Formatting.None;
+			doc.Save(writer);
+		}
+		return strWriter.ToString();
+	}
+
 	private static int encode(string input, string output)
 	{
+		// Read XML file as string for metadata
+		var fileReader = new StreamReader(input);
+		var strXml = xmlCompact(fileReader.ReadToEnd());
+		fileReader.Close();
+
 		// Deserialise XML controller configuration
+		var xmlReader = new StringReader(strXml);
 		var serializer = new XmlSerializer(typeof(Export));
-		XmlReader reader = XmlReader.Create(input);
-		Export export = (Export)serializer.Deserialize(reader);
-		reader.Close();
+		Export export = (Export)serializer.Deserialize(xmlReader);
+		xmlReader.Close();
 
 		var con = export.Network.Last();
 		int channels = con.StartChan + con.Channels - 1;
+		Console.WriteLine("Encoding " + channels + " channels to " + output);
 
 		// Open video file for encoding output
 		IntPtr data = codec.encode_open_output(output, "libx264rgb", "rgb24",
-				(int)export.Resolution, channels);
+				(int)export.Resolution, channels, strXml);
 		if (data == IntPtr.Zero)
 			return 1;
 
@@ -148,18 +160,28 @@ public class HelloWorld
 	private static int decode(string input, string output)
 	{
 		// Open video file for decoding input
-		IntPtr data = codec.decode_open_input(input);
+		IntPtr cmtp = new IntPtr();
+		IntPtr data = codec.decode_open_input(input, ref cmtp);
 		if (data == IntPtr.Zero)
 			return 1;
-		int channels = codec.channels(data);
-		byte[] chdata = new byte[channels];
+		string strXml = Marshal.PtrToStringAnsi(cmtp);
+
+		// Deserialise XML controller configuration
+		var xmlReader = new StringReader(strXml);
+		var serializer = new XmlSerializer(typeof(Export));
+		Export export = (Export)serializer.Deserialize(xmlReader);
+		xmlReader.Close();
+
+		var con = export.Network.Last();
+		int channels = con.StartChan + con.Channels - 1;
 		Console.WriteLine(channels + " channels available from " + input);
+		byte[] chdata = new byte[channels];
 
 		// Read video frames and write to binary file
 		BinaryWriter bw = new BinaryWriter(File.Create(output));
 		int got = 0;
 		for (;;) {
-			IntPtr frame = codec.decode_read_frame(data, out got);
+			IntPtr frame = codec.decode_read_frame(data, channels, out got);
 			if (got == 0)
 				break;
 			if (frame != IntPtr.Zero)
@@ -169,6 +191,16 @@ public class HelloWorld
 			bw.Write((UInt16)channels);
 			bw.Write(chdata);
 		}
+
+		// Write network XML
+		export.OutFile = output;
+		string xmlOutput = Path.Combine(Path.GetDirectoryName(output),
+			Path.GetFileNameWithoutExtension(output) +
+			"_Network.xml");
+		XmlWriterSettings settings = new XmlWriterSettings();
+		settings.Indent = true;
+		settings.IndentChars = "\t";
+		serializer.Serialize(XmlWriter.Create(xmlOutput, settings), export);
 
 		// Close files
 		codec.decode_close(data);
