@@ -7,7 +7,7 @@ EXE	= test.exe
 #CROSS	= mipsel-linux-
 OPTIMIZE	:= -g -O3
 CFLAGS		:= -Wall -std=c99 -U__STRICT_ANSI__ -I/usr/include/libxml2 \
-		  -Wno-deprecated-declarations -Wno-unused-variable \
+		  -Wno-deprecated-declarations -Wno-unused-variable -Wno-unused-function \
 		  $(LIBCFLAGS)
 CXXFLAGS	:= -Wall -std=c++11 -I/usr/include/libxml2 \
 		  -Wno-deprecated-declarations

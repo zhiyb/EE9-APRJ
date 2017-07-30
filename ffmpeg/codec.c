@@ -10,6 +10,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/common.h>
+#include <libavutil/timestamp.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/samplefmt.h>
@@ -19,6 +20,7 @@
 typedef struct data_t {
 	AVFormatContext *fmt_ctx;
 	AVFrame *iframe, *oframe;
+	AVPacket pkt;
 	struct SwsContext *sc;
 	int resolution;
 	int pts;
@@ -56,6 +58,16 @@ static void free_data(data_t *data)
 	free(data);
 }
 
+static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
+{
+	AVRational *time_base = &fmt_ctx->streams[pkt->stream_index]->time_base;
+	printf("pts:%s pts_time:%s dts:%s dts_time:%s duration:%s duration_time:%s stream_index:%d\n",
+			av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, time_base),
+			av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, time_base),
+			av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, time_base),
+			pkt->stream_index);
+}
+
 AVCodec *find_codec(const char *codec_name)
 {
 	AVCodec *codec = avcodec_find_encoder_by_name(codec_name);
@@ -68,12 +80,13 @@ AVCodec *find_codec(const char *codec_name)
 /* }}} */
 
 /* {{{ Encode */
-static data_t *encode_allocate(AVCodecContext *ac, AVCodecContext *vc)
+static data_t *encode_allocate(data_t *data, AVCodecContext *ac, AVCodecContext *vc)
 {
 	AVFrame *iframe = 0, *oframe = 0;
 	struct SwsContext *sc = 0;
-	data_t *data = 0;
 
+	if (!data)
+		return 0;
 	if (!vc)
 		goto done;
 
@@ -122,9 +135,6 @@ static data_t *encode_allocate(AVCodecContext *ac, AVCodecContext *vc)
 	}
 
 done:
-	data = (data_t *)calloc(1, sizeof(data_t));
-	if (!data)
-		goto error;
 	data->iframe = iframe;
 	data->oframe = oframe;
 	data->sc = sc;
@@ -144,43 +154,7 @@ error:
 	return 0;
 }
 
-static int encode_add_video_stream(AVFormatContext *fmt_ctx, AVCodec *vcodec,
-		const char *pix_fmt_name, int resolution, int channels)
-{
-	if (!vcodec)
-		return -1;
-
-	AVStream *out_stream = avformat_new_stream(fmt_ctx, vcodec);
-	if (!out_stream) {
-		av_log(NULL, AV_LOG_ERROR, "Failed allocating output stream\n");
-		return -1;
-	}
-
-	AVCodecContext *c = out_stream->codec;
-	/* resolution must be a multiple of two */
-	int ch = (channels + 2) / 3;		// Rounding
-	c->height = (unsigned int)round(sqrt(ch)) & ~1u;
-	c->width = (ch + c->height - 1u) / c->height;
-	c->width = (c->width + 1u) & ~1u;
-	out_stream->time_base = c->time_base = (AVRational){resolution, 1000};
-	if (pix_fmt_name != 0)
-		c->pix_fmt = av_get_pix_fmt(pix_fmt_name);
-	if (vcodec->id == AV_CODEC_ID_H264)
-		if (av_opt_set_double(c->priv_data, "crf", 0, 0) != 0)
-			av_log(NULL, AV_LOG_WARNING, "Cannot set crf option\n");
-
-	/* open it */
-	if (avcodec_open2(c, vcodec, NULL) < 0) {
-		av_log(NULL, AV_LOG_ERROR, "Could not open video codec\n");
-		return -1;
-	}
-	return out_stream->id;
-
-}
-
-data_t *encode_open_output(const char *file,
-		AVCodec *acodec, AVCodec *vcodec, const char *pix_fmt_name,
-		const int resolution, const int channels, const char *comment)
+data_t *encode_open_output(const char *file, const char *comment)
 {
 	// Open output media file
 	AVFormatContext *fmt_ctx;
@@ -188,17 +162,6 @@ data_t *encode_open_output(const char *file,
 		av_log(NULL, AV_LOG_ERROR, "Could not allocate format context for %s\n", file);
 		return 0;
 	}
-	// Create audio stream
-	int astream = -1;
-	AVCodecContext *ac = 0;
-	if (astream >= 0)
-		ac = fmt_ctx->streams[astream]->codec;
-	// Create video stream
-	int vstream = encode_add_video_stream(fmt_ctx, vcodec, pix_fmt_name,
-			resolution, channels);
-	AVCodecContext *vc = 0;
-	if (vstream >= 0)
-		vc = fmt_ctx->streams[vstream]->codec;
 
 	if (!(fmt_ctx->oformat->flags & AVFMT_NOFILE)) {
 		if (avio_open(&fmt_ctx->pb, file, AVIO_FLAG_WRITE) < 0) {
@@ -211,25 +174,155 @@ data_t *encode_open_output(const char *file,
 	if (comment)
 		av_dict_set(&fmt_ctx->metadata, "comment", comment, 0);
 
-	/* init muxer, write output file header */
+	data_t *data = (data_t *)calloc(1, sizeof(data_t));
+	if (!data)
+		return 0;
+	data->fmt_ctx = fmt_ctx;
+	data->audio.stream = -1;
+	data->video.stream = -1;
+	return data;
+}
+
+int encode_add_audio_stream_copy(data_t *data, AVCodecContext *dec_ac)
+{
+	AVFormatContext *fmt_ctx = data->fmt_ctx;
+	if (!dec_ac)
+		return -1;
+
+	AVCodec *acodec = avcodec_find_encoder(dec_ac->codec_id);
+	if (!acodec) {
+		av_log(NULL, AV_LOG_ERROR, "Encoding codec for %s not found\n",
+				dec_ac->codec_name);
+		return -1;
+	}
+
+	AVStream *out_stream = avformat_new_stream(fmt_ctx, acodec);
+	if (!out_stream) {
+		av_log(NULL, AV_LOG_ERROR,
+				"Failed allocating output audio stream\n");
+		return -1;
+	}
+
+	// Configure codec parameters
+	AVCodecContext *ac = out_stream->codec;
+	ac->bit_rate = dec_ac->bit_rate;
+	ac->sample_rate = dec_ac->sample_rate;
+	ac->channel_layout = dec_ac->channel_layout;
+	ac->channels = av_get_channel_layout_nb_channels(dec_ac->channel_layout);
+	// Take first format from list of supported formats
+	ac->sample_fmt = dec_ac->sample_fmt;
+	ac->time_base = dec_ac->time_base;
+	out_stream->time_base = ac->time_base;
+
+	// Open codec context
+	if (avcodec_open2(ac, acodec, NULL) < 0) {
+		av_log(NULL, AV_LOG_ERROR, "Cannot open audio codec context\n");
+		return -1;
+	}
+	data->audio.stream = out_stream->id;
+	return data->audio.stream;
+}
+
+int encode_add_video_stream(data_t *data, AVCodec *vcodec,
+		const char *pix_fmt_name, int resolution, int channels)
+{
+	AVFormatContext *fmt_ctx = data->fmt_ctx;
+	if (!vcodec)
+		return -1;
+
+	AVStream *out_stream = avformat_new_stream(fmt_ctx, vcodec);
+	if (!out_stream) {
+		av_log(NULL, AV_LOG_ERROR,
+				"Failed allocating output video stream\n");
+		return -1;
+	}
+
+	AVCodecContext *vc = out_stream->codec;
+	/* resolution must be a multiple of two */
+	int ch = (channels + 2) / 3;		// Rounding
+	vc->height = (unsigned int)round(sqrt(ch)) & ~1u;
+	vc->width = (ch + vc->height - 1u) / vc->height;
+	vc->width = (vc->width + 1u) & ~1u;
+	out_stream->time_base = vc->time_base = (AVRational){resolution, 1000};
+	if (pix_fmt_name != 0)
+		vc->pix_fmt = av_get_pix_fmt(pix_fmt_name);
+	if (vcodec->id == AV_CODEC_ID_H264)
+		if (av_opt_set_double(vc->priv_data, "crf", 0, 0) != 0)
+			av_log(NULL, AV_LOG_WARNING, "Cannot set crf option\n");
+
+	// Open codec context
+	if (avcodec_open2(vc, vcodec, NULL) < 0) {
+		av_log(NULL, AV_LOG_ERROR, "Cannot open video codec context\n");
+		return -1;
+	}
+	data->video.stream = out_stream->id;
+	data->resolution = resolution;
+	return data->video.stream;
+}
+
+data_t *encode_write_header(data_t *data, const char *file)
+{
+	AVFormatContext *fmt_ctx = data->fmt_ctx;
+	// Audio stream context
+	int astream = data->audio.stream;
+	AVCodecContext *ac = 0;
+	if (astream >= 0)
+		ac = fmt_ctx->streams[astream]->codec;
+	// Video stream context
+	int vstream = data->video.stream;
+	AVCodecContext *vc = 0;
+	if (vstream >= 0)
+		vc = fmt_ctx->streams[vstream]->codec;
+	// Init muxer, write file header
 	if (avformat_write_header(fmt_ctx, NULL) < 0) {
 		av_log(NULL, AV_LOG_ERROR, "Error occurred when opening output file");
 		return 0;
 	}
-
 	av_dump_format(fmt_ctx, 0, file, 1);
-
-	data_t *data = encode_allocate(ac, vc);
-	if (!data)
-		return 0;
-	data->fmt_ctx = fmt_ctx;
-	data->audio.stream = astream;
-	data->video.stream = vstream;
-	data->resolution = resolution;
-	return data;
+	return encode_allocate(data, ac, vc);
 }
 
-int encode_write_video_frame(data_t *data, void *fp, int channels)
+int encode_write_audio_packet(data_t *data, AVCodecContext *ac, AVPacket *pkt)
+{
+	AVFormatContext *fmt_ctx = data->fmt_ctx;
+	int stream = data->audio.stream;
+	// Prepare packet for muxing
+	//av_packet_rescale_ts(pkt, ac->time_base, fmt_ctx->streams[stream]->time_base);
+	pkt->stream_index = stream;
+	int ret = av_interleaved_write_frame(fmt_ctx, pkt);
+	av_free_packet(pkt);
+	return ret >= 0;
+}
+
+int encode_write_audio_frame(data_t *data, AVFrame *frame)
+{
+	AVFormatContext *fmt_ctx = data->fmt_ctx;
+	AVCodecContext *c = fmt_ctx->streams[data->audio.stream]->codec;
+
+	AVPacket pkt;
+	av_init_packet(&pkt);
+	pkt.data = NULL;
+	pkt.size = 0;
+
+	// Encode frame
+	int got_output = 0;
+	if (avcodec_encode_audio2(c, &pkt, frame, &got_output) < 0) {
+		av_log(NULL, AV_LOG_ERROR, "Error encoding frame");
+		av_free_packet(&pkt);
+		return 0;
+	}
+	//av_frame_make_writable(frame);
+	if (!got_output) {
+		av_free_packet(&pkt);
+		return 1;
+	}
+
+	// Prepare packet for muxing
+	pkt.stream_index = data->audio.stream;
+	return av_interleaved_write_frame(fmt_ctx, &pkt) >= 0;
+}
+
+AVFrame *encode_channels(data_t *data, void *fp, int channels)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	AVCodecContext *c = fmt_ctx->streams[data->video.stream]->codec;
@@ -253,15 +346,22 @@ int encode_write_video_frame(data_t *data, void *fp, int channels)
 			time_base,
 			fmt_ctx->streams[0]->time_base,
 			(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+	return oframe;
+}
+
+int encode_write_video_frame(data_t *data, AVFrame *frame)
+{
+	AVFormatContext *fmt_ctx = data->fmt_ctx;
+	AVCodecContext *c = fmt_ctx->streams[data->video.stream]->codec;
 
 	AVPacket pkt;
 	av_init_packet(&pkt);
 	pkt.data = NULL;
 	pkt.size = 0;
 
-	// Encode the image
+	// Encode frame
 	int got_output = 0;
-	if (avcodec_encode_video2(c, &pkt, oframe, &got_output) < 0) {
+	if (avcodec_encode_video2(c, &pkt, frame, &got_output) < 0) {
 		av_log(NULL, AV_LOG_ERROR, "Error encoding frame");
 		av_free_packet(&pkt);
 		return 0;
@@ -272,29 +372,19 @@ int encode_write_video_frame(data_t *data, void *fp, int channels)
 	}
 
 	// Prepare packet for muxing
-	// TODO: stream 0 ?
-	pkt.stream_index = 0;
-	if (av_interleaved_write_frame(fmt_ctx, &pkt) < 0) {
-		av_free_packet(&pkt);
-		return 0;
-	}
-	av_free_packet(&pkt);
-	return 1;
+	pkt.stream_index = data->video.stream;
+	return av_interleaved_write_frame(fmt_ctx, &pkt) >= 0;
 }
 
-void encode_close(data_t *data)
+static void encode_flush_video(data_t *data)
 {
-	if (!data)
-		return;
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	AVCodecContext *c = fmt_ctx->streams[data->video.stream]->codec;
-	AVFrame *iframe = data->iframe, *oframe = data->oframe;
-	struct SwsContext *sc = data->sc;
 
 	AVPacket pkt;
 	// Flush encoder
 	for (;;) {
-		/* encode the image */
+		// Empty packet
 		av_init_packet(&pkt);
 		pkt.data = NULL;
 		pkt.size = 0;
@@ -307,12 +397,49 @@ void encode_close(data_t *data)
 			break;
 
 		// Prepare packet for muxing
-		// TODO: stream 0 ?
-		pkt.stream_index = 0;
+		pkt.stream_index = data->video.stream;
 		if (av_interleaved_write_frame(fmt_ctx, &pkt) < 0)
 			break;
 	}
 	av_write_trailer(fmt_ctx);
+}
+
+static void encode_flush_audio(data_t *data)
+{
+	AVFormatContext *fmt_ctx = data->fmt_ctx;
+	AVCodecContext *c = fmt_ctx->streams[data->audio.stream]->codec;
+
+	AVPacket pkt;
+	// Flush encoder
+	for (;;) {
+		// Empty packet
+		av_init_packet(&pkt);
+		pkt.data = NULL;
+		pkt.size = 0;
+		int got_output = 0;
+		if (avcodec_encode_audio2(c, &pkt, NULL, &got_output) < 0) {
+			av_log(NULL, AV_LOG_ERROR, "Error encoding frame");
+			break;
+		}
+		if (!got_output)
+			break;
+
+		// Prepare packet for muxing
+		pkt.stream_index = data->audio.stream;
+		if (av_interleaved_write_frame(fmt_ctx, &pkt) < 0)
+			break;
+	}
+	av_write_trailer(fmt_ctx);
+}
+
+void encode_close(data_t *data)
+{
+	if (!data)
+		return;
+	if (data->video.stream >= 0)
+		encode_flush_video(data);
+	else if (data->audio.stream >= 0)
+		encode_flush_audio(data);
 
 	if (data->oframe)
 		av_freep(data->oframe->data);
@@ -459,47 +586,60 @@ data_t *decode_open_input(const char *file, char **comment, int *gota, int *gotv
 	return data;
 }
 
-AVFrame *decode_read_frame(data_t *data, int *got, int *video)
+AVCodecContext *decode_context(data_t *data, const int video)
+{
+	int stream = video ? data->video.stream : data->audio.stream;
+	if (stream < 0)
+		return NULL;
+	return data->fmt_ctx->streams[stream]->codec;
+}
+
+AVPacket *decode_read_packet(data_t *data, int *got, int *video)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	AVFrame *iframe = data->iframe, *oframe = data->oframe;
 
-	AVPacket pkt;
-	av_init_packet(&pkt);
-	pkt.data = NULL;
-	pkt.size = 0;
+	av_init_packet(&data->pkt);
+	data->pkt.data = NULL;
+	data->pkt.size = 0;
 
 	// Frame processing
-	*got = 0;
-	*video = 0;
-	int ret = av_read_frame(fmt_ctx, &pkt);
+	int ret = av_read_frame(fmt_ctx, &data->pkt);
 	if (ret < 0 && ret != AVERROR_EOF) {
+		*got = 0;
 		av_log(NULL, AV_LOG_ERROR, "Could not read frame\n");
-		av_free_packet(&pkt);
-		return 0;
+		av_free_packet(&data->pkt);
+		return NULL;
 	}
-	int stream = pkt.stream_index;
+	*got = ret != AVERROR_EOF;
+	int stream = data->pkt.stream_index;
+	*video = stream == data->video.stream;
+	//log_packet(fmt_ctx, &data->pkt);
+	return &data->pkt;
+}
+
+AVFrame *decode_video_frame(data_t *data, AVPacket *pkt)
+{
+	AVFormatContext *fmt_ctx = data->fmt_ctx;
+	AVFrame *iframe = data->iframe, *oframe = data->oframe;
+	int stream = pkt->stream_index;
 	AVCodecContext *c = fmt_ctx->streams[stream]->codec;
-	if (stream == data->audio.stream) {
-		if (avcodec_decode_audio4(c, iframe, got, &pkt) < 0) {
-			av_log(NULL, AV_LOG_ERROR, "Error decoding audio frame\n");
-			av_free_packet(&pkt);
-			return 0;
-		}
-	} else if (stream == data->video.stream) {
-		*video = 1;
-		if (avcodec_decode_video2(c, iframe, got, &pkt) < 0) {
-			av_log(NULL, AV_LOG_ERROR, "Error decoding video frame\n");
-			av_free_packet(&pkt);
-			return 0;
-		}
+
+	int got;
+	if (avcodec_decode_video2(c, iframe, &got, pkt) < 0) {
+		av_log(NULL, AV_LOG_ERROR, "Error decoding video frame\n");
+		av_free_packet(pkt);
+		return NULL;
 	}
-	av_free_packet(&pkt);
-	if (!*got) {
-		*got = ret != AVERROR_EOF;
-		return 0;
-	}
+	av_free_packet(pkt);
+	if (!got)
+		return NULL;
 	return iframe;
+}
+
+void decode_free_packet(AVPacket *pkt)
+{
+	av_free_packet(pkt);
 }
 
 static void *decode_write_output(data_t *data, int channels)

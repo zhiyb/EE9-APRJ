@@ -1,2 +1,2 @@
 #!/bin/sh
-ffmpeg -i "$1" -i "$2" -filter_complex psnr -f null /dev/null
+ffmpeg -i "$1" -i "$2" -filter_complex psnr -f null -
