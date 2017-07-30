@@ -1,6 +1,6 @@
 # Author: Yubo Zhi (normanzyb@gmail.com)
 
-PRG	= dec_enc avio_reading metadata encoding decoding
+PRG	= dec_enc avio_reading metadata encoding decoding audio
 LIB	= libcodec.so
 EXE	= test.exe
 
@@ -30,7 +30,9 @@ $(PRG): %: %.o
 %.exe: %.cs
 	mcs /out:$@ $< /r:System.dll
 
-test.exe: libcodec.so
+audio: LIBS	+= -L. -lcodec -Wl,--rpath=$(PWD)
+
+test.exe: libs
 
 lib%.so: %.o
 	$(CXX) -shared $(OPTIMIZE) -o $@ $^ $(LIBS)
@@ -87,8 +89,8 @@ out.mp4: encoding $(SEQ)_Network.xml
 %.hd: %.raw
 	hd $< > $@
 
-%.test_enc.mp4: test.exe %_Network.xml
-	mono $^ $@
+%.test_enc.mp4: test.exe %.raw
+	mono $< $*_Network.xml $@
 
 %.enc.mp4: encoding %.raw
 	./$< $*_Network.xml $@ $(CODEC)

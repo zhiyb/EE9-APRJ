@@ -3,11 +3,13 @@ avio_reading
 encoding
 decoding
 metadata
+audio
 *.o
 *.so
 *.exe
 *.pgm
 *.mp4
+*.mp3
 *.hd
 *.head
 *.raw

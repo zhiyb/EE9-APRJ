@@ -9,26 +9,37 @@ using System.Xml.Serialization;
 public class codec
 {
 	[DllImport("codec.dll")]
-	public static extern int version();
-
-	[DllImport("codec.dll")]
 	public static extern void init();
 
+	[DllImport("codec.dll")]
+	public static extern int version();
+
 	[DllImport("codec.dll", CharSet = CharSet.Ansi)]
-	public static extern IntPtr encode_open_output(string file, string codec_name,
-			string pix_fmt_name, int resolution, int channels, string comment);
+	public static extern IntPtr find_codec(string codec_name);
+
+	[DllImport("codec.dll", CharSet = CharSet.Ansi)]
+	public static extern IntPtr encode_open_output(string file,
+			IntPtr acodec, IntPtr vcodec, string pix_fmt_name,
+			int resolution, int channels, string comment);
 
 	[DllImport("codec.dll")]
-	public static extern int encode_write_frame(IntPtr data, byte[] frame, int channels);
+	public static extern int encode_write_video_frame(IntPtr data,
+			byte[] frame, int channels);
 
 	[DllImport("codec.dll")]
 	public static extern void encode_close(IntPtr data);
 
 	[DllImport("codec.dll")]
-	public static extern IntPtr decode_open_input(string file, ref IntPtr comment);
+	public static extern IntPtr decode_open_input(string file, ref IntPtr comment,
+			out int gota, out int gotv);
 
 	[DllImport("codec.dll")]
-	public static extern IntPtr decode_read_frame(IntPtr data, int channels, out int got);
+	public static extern IntPtr decode_read_frame(IntPtr data,
+			out int got, out int video);
+
+	[DllImport("codec.dll")]
+	public static extern IntPtr decode_channels(IntPtr data, IntPtr frame,
+			int channels);
 
 	[DllImport("codec.dll")]
 	public static extern void decode_close(IntPtr data);
@@ -76,7 +87,8 @@ public class HelloWorld
 		}
 		string input = args[0], output = args[1];
 		bool enc = input.EndsWith(".xml", true, null);
-		Console.WriteLine((enc ? "Encoding " : "Decoding ") + input + " to " + output);
+		Console.WriteLine((enc ? "Encoding " : "Decoding ") +
+				input + " to " + output);
 
 		codec.init();
 		if (enc)
@@ -133,9 +145,15 @@ public class HelloWorld
 		int channels = con.StartChan + con.Channels - 1;
 		Console.WriteLine("Encoding " + channels + " channels to " + output);
 
+		// Find encoding codecs
+		IntPtr acodec = IntPtr.Zero;
+		IntPtr vcodec = codec.find_codec("libx264rgb");
+		if (vcodec == IntPtr.Zero)
+			return 1;
+
 		// Open video file for encoding output
-		IntPtr data = codec.encode_open_output(output, "libx264rgb", "rgb24",
-				(int)export.Resolution, channels, strXml);
+		IntPtr data = codec.encode_open_output(output, acodec, vcodec,
+				"rgb24", (int)export.Resolution, channels, strXml);
 		if (data == IntPtr.Zero)
 			return 1;
 
@@ -144,11 +162,12 @@ public class HelloWorld
 		try {
 			for (;;) {
 				byte[] frame = ReadFrame(br);
-				if (codec.encode_write_frame(data, frame, channels) == 0)
+				if (codec.encode_write_video_frame(data,
+							frame, channels) == 0)
 					break;
 			}
-		} catch (Exception e) {
-			Console.WriteLine("Exception: " + e.ToString());
+		} catch (Exception /*e*/) {
+			//Console.WriteLine("Exception: " + e.ToString());
 		}
 
 		// Close files
@@ -161,9 +180,15 @@ public class HelloWorld
 	{
 		// Open video file for decoding input
 		IntPtr cmtp = new IntPtr();
-		IntPtr data = codec.decode_open_input(input, ref cmtp);
+		int gota, gotv;
+		IntPtr data = codec.decode_open_input(input, ref cmtp,
+				out gota, out gotv);
 		if (data == IntPtr.Zero)
 			return 1;
+		if (gotv == 0) {
+			codec.decode_close(data);
+			return 1;
+		}
 		string strXml = Marshal.PtrToStringAnsi(cmtp);
 
 		// Deserialise XML controller configuration
@@ -179,13 +204,18 @@ public class HelloWorld
 
 		// Read video frames and write to binary file
 		BinaryWriter bw = new BinaryWriter(File.Create(output));
-		int got = 0;
 		for (;;) {
-			IntPtr frame = codec.decode_read_frame(data, channels, out got);
+			int got = 0, video = 0;
+			IntPtr frame = codec.decode_read_frame(data,
+					out got, out video);
 			if (got == 0)
 				break;
-			if (frame != IntPtr.Zero)
-				Marshal.Copy(frame, chdata, 0, channels);
+			if (video == 0)
+				continue;
+			if (frame != IntPtr.Zero) {
+				IntPtr a = codec.decode_channels(data, frame, channels);
+				Marshal.Copy(a, chdata, 0, channels);
+			}
 			// 4 bytes header, 1 byte command, 1 byte stream
 			bw.Write(new byte[] { 0xde, 0xad, 0xbe, 0xef, 0x02, 0x00 });
 			bw.Write((UInt16)channels);
