@@ -1,0 +1,35 @@
+INPUT	?= $(wildcard *raw.mp4)
+AUDIO	?= $(wildcard *audio.mp3)
+OUTPUT	:= yuv444p-0.mp4 yuv444p-6.mp4 yuv444p-12.mp4 yuv420p-0.mp4
+OUTPUT	+= rgb24-0.mp4 rgb24-6.mp4 rgb24-12.mp4 rgb24-24.mp4
+OUTPUT	+= yuv444p-scale.mp4
+OUTPUT	+= rgb24-0-audio.mp4
+
+ROOT	:= $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
+
+.PHONY: all
+all: $(OUTPUT)
+
+.SECONDARY:
+.DELETE_ON_ERROR:
+
+.PHONY: psnr
+psnr: $(OUTPUT:%=psnr-%)
+
+yuv444p-scale.mp4: %-scale.mp4: $(INPUT)
+	ffmpeg -i "$<" -crf 0 -codec:v libx264 -pix_fmt $* -vf "scale=iw*8:-1" -sws_flags neighbor -y "$@"
+
+rgb24-%-audio.mp4: $(INPUT) $(AUDIO)
+	ffmpeg -i "$(INPUT)" -i $(AUDIO) -c:v copy -c:a copy "$@"
+
+yuv420p-%.mp4: $(INPUT)
+	ffmpeg -i "$<" -crf $* -codec:v libx264 -pix_fmt yuv420p -y "$@"
+
+yuv444p-%.mp4: $(INPUT)
+	ffmpeg -i "$<" -crf $* -codec:v libx264 -pix_fmt yuv444p -y "$@"
+
+rgb24-%.mp4: $(INPUT)
+	ffmpeg -i "$<" -crf $* -codec:v libx264rgb -pix_fmt rgb24 -y "$@"
+
+psnr-%: $(ROOT)psnr.sh % $(INPUT)
+	$^ 2>&1 | tail -n 1
