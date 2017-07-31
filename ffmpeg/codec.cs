@@ -184,11 +184,23 @@ public class HelloWorld
 		Export export = (Export)serializer.Deserialize(xmlReader);
 		xmlReader.Close();
 
+		// Find media file
 		var mediaFile = export.Media.FirstOrDefault();
 		var media = FindMedia(mediaFile);
 		if (media == null && mediaFile != null)
 			Console.WriteLine("Media " + mediaFile + " not found");
 
+		// Find sequence file
+		var outFile = export.OutFile;
+		if (!new FileInfo(outFile).Exists)
+			outFile = Path.Combine(Path.GetDirectoryName(input),
+					Path.GetFileName(outFile));
+		if (!new FileInfo(outFile).Exists) {
+			Console.WriteLine("Sequence file " + export.OutFile + " not found");
+			return 1;
+		}
+
+		// Extract channel information
 		var con = export.Network.Last();
 		int channels = con.StartChan + con.Channels - 1;
 		Console.WriteLine("Encoding " + channels + " channels to " + output);
@@ -239,7 +251,7 @@ public class HelloWorld
 		}
 
 		// Open sequence dump file
-		BinaryReader br = new BinaryReader(File.OpenRead(export.OutFile));
+		BinaryReader br = new BinaryReader(File.OpenRead(outFile));
 		if (br == null) {
 			codec.decode_close(mdata);
 			codec.encode_close(data);
