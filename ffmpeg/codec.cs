@@ -335,8 +335,10 @@ public class HelloWorld
 					out got, out video);
 			if (got == 0)
 				break;
-			if (video == 0)
+			if (video == 0) {
+				codec.decode_free_packet(pkt);
 				continue;
+			}
 			IntPtr frame = codec.decode_video_frame(data, pkt);
 			if (frame != IntPtr.Zero) {
 				IntPtr a = codec.decode_channels(data, frame, channels);

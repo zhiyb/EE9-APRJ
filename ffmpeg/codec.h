@@ -11,7 +11,7 @@ typedef struct data_t data_t;
 
 void init();
 int version();
-void log_packet_data(const data_t *data, const AVPacket *pkt);
+//void log_packet_data(const data_t *data, const AVPacket *pkt);
 AVCodec *find_codec(const char *codec_name);
 
 // Video encoder

@@ -10,7 +10,6 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/common.h>
-#include <libavutil/timestamp.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/samplefmt.h>
@@ -58,6 +57,7 @@ static void free_data(data_t *data)
 	free(data);
 }
 
+#if 0
 static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
 {
 	AVRational *time_base = &fmt_ctx->streams[pkt->stream_index]->time_base;
@@ -72,6 +72,7 @@ void log_packet_data(const data_t *data, const AVPacket *pkt)
 {
 	log_packet(data->fmt_ctx, pkt);
 }
+#endif
 
 AVCodec *find_codec(const char *codec_name)
 {
@@ -356,7 +357,7 @@ AVFrame *encode_channels(data_t *data, void *fp, int channels)
 			(void *)oframe->data, oframe->linesize);
 	oframe->pts = av_rescale_q_rnd(data->pts++, c->time_base,
 			fmt_ctx->streams[data->video.stream]->time_base,
-			(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+			AV_ROUND_NEAR_INF);
 	return oframe;
 }
 

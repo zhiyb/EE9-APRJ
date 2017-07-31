@@ -31,13 +31,15 @@ $(PRG): %: %.o
 %.exe: %.cs
 	mcs /out:$@ $< /r:System.dll
 
-audio: LIBS	+= -L. -lcodec -Wl,--rpath=$(PWD)
+#libcodec.so: mux.o
 
+audio: LIBS	+= -L. -lcodec -Wl,--rpath=$(PWD)
 audio: libs
+
 codec.exe: libs
 
 lib%.so: %.o
-	$(CXX) -shared $(OPTIMIZE) -o $@ $< $(LIBS)
+	$(CXX) -shared $(OPTIMIZE) -o $@ $^ $(LIBS)
 
 %.o: %.cpp
 	$(CXX) -c $(OPTIMIZE) $(CXXFLAGS) -o $@ $<
