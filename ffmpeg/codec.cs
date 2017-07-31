@@ -23,7 +23,7 @@ public class codec
 	public static extern IntPtr encode_open_output(string file, string comment);
 
 	[DllImport("codec.dll")]
-	public static extern int encode_add_audio_stream_copy(IntPtr data, IntPtr acodec);
+	public static extern int encode_add_audio_stream_copy(IntPtr data, IntPtr dec_ac);
 
 	[DllImport("codec.dll", CharSet = CharSet.Ansi)]
 	public static extern int encode_add_video_stream(IntPtr data, IntPtr vcodec,
@@ -33,14 +33,8 @@ public class codec
 	public static extern IntPtr encode_write_header(IntPtr data, string file);
 
 	[DllImport("codec.dll")]
-	public static extern int encode_write_audio_packet(IntPtr data,
-			IntPtr ac, IntPtr pkt);
-
-	[DllImport("codec.dll")]
-	public static extern int encode_write_audio_frame(IntPtr data, IntPtr frame);
-
-	[DllImport("codec.dll")]
-	public static extern int encode_write_video_frame(IntPtr data, IntPtr frame);
+	public static extern int encode_write_packet_or_frame(IntPtr data,
+			IntPtr pkt, IntPtr frame);
 
 	[DllImport("codec.dll")]
 	public static extern void encode_close(IntPtr data);
@@ -51,7 +45,7 @@ public class codec
 			out int gota, out int gotv);
 
 	[DllImport("codec.dll")]
-	public static extern IntPtr decode_context(IntPtr data, out int video);
+	public static extern IntPtr decode_context(IntPtr data, int video);
 
 	[DllImport("codec.dll")]
 	public static extern IntPtr decode_read_packet(IntPtr data,
@@ -123,9 +117,35 @@ public class HelloWorld
 
 		codec.init();
 		if (enc)
-			return encode(input, output);
+			return Encode(input, output);
 		else
-			return decode(input, output);
+			return Decode(input, output);
+	}
+
+	private static string FindMedia(string path)
+	{
+		if (path == null)
+			return null;
+		//Console.WriteLine("Trying media file path " + path);
+		if (new FileInfo(path).Exists)
+			return path;
+		path = Path.GetFileName(path);
+		//Console.WriteLine("Trying media file path " + path);
+		if (new FileInfo(path).Exists)
+			return path;
+		return null;
+	}
+
+	private static string XmlCompact(string content)
+	{
+		XmlDocument doc = new XmlDocument();
+		doc.LoadXml(content);
+		var strWriter = new StringWriter();
+		using (XmlTextWriter writer = new XmlTextWriter(strWriter)) {
+			writer.Formatting = Formatting.None;
+			doc.Save(writer);
+		}
+		return strWriter.ToString();
 	}
 
 	// 4 bytes header, 1 byte command (set frame), 1 byte stream
@@ -143,27 +163,19 @@ public class HelloWorld
 
 	private static byte[] ReadFrame(BinaryReader br)
 	{
-		UInt16 channels = ReadHeader(br);
-		return br.ReadBytes(channels);
-	}
-
-	private static string xmlCompact(string content)
-	{
-		XmlDocument doc = new XmlDocument();
-		doc.LoadXml(content);
-		var strWriter = new StringWriter();
-		using (XmlTextWriter writer = new XmlTextWriter(strWriter)) {
-			writer.Formatting = Formatting.None;
-			doc.Save(writer);
+		try {
+			UInt16 channels = ReadHeader(br);
+			return br.ReadBytes(channels);
+		} catch (Exception /*e*/) {
+			return null;
 		}
-		return strWriter.ToString();
 	}
 
-	private static int encode(string input, string output)
+	private static int Encode(string input, string output)
 	{
 		// Read XML file as string for metadata
 		var fileReader = new StreamReader(input);
-		var strXml = xmlCompact(fileReader.ReadToEnd());
+		var strXml = XmlCompact(fileReader.ReadToEnd());
 		fileReader.Close();
 
 		// Deserialise XML controller configuration
@@ -172,19 +184,23 @@ public class HelloWorld
 		Export export = (Export)serializer.Deserialize(xmlReader);
 		xmlReader.Close();
 
+		var mediaFile = export.Media.FirstOrDefault();
+		var media = FindMedia(mediaFile);
+		if (media == null && mediaFile != null)
+			Console.WriteLine("Media " + mediaFile + " not found");
+
 		var con = export.Network.Last();
 		int channels = con.StartChan + con.Channels - 1;
 		Console.WriteLine("Encoding " + channels + " channels to " + output);
 
-		// Find encoding codecs
-		IntPtr acodec = IntPtr.Zero;
-		IntPtr vcodec = codec.find_codec("libx264rgb");
-		if (vcodec == IntPtr.Zero)
-			return 1;
-
 		// Open video file for encoding output
 		IntPtr data = codec.encode_open_output(output, strXml);
 		if (data == IntPtr.Zero)
+			return 1;
+
+		// Find video encoding codec
+		IntPtr vcodec = codec.find_codec("libx264rgb");
+		if (vcodec == IntPtr.Zero)
 			return 1;
 
 		// Add video stream
@@ -195,33 +211,85 @@ public class HelloWorld
 			return 1;
 		}
 
+		// Open media file for audio muxing
+		IntPtr ac = IntPtr.Zero;
+		IntPtr mdata = IntPtr.Zero;
+		if (media != null) {
+			IntPtr comment = IntPtr.Zero;
+			int gota, gotv;
+			mdata = codec.decode_open_input(media, ref comment, out gota, out gotv);
+			if (gota == 0)
+				codec.decode_close(mdata);
+			else if (mdata != IntPtr.Zero)
+				ac = codec.decode_context(mdata, 0);
+		}
+
+		// Add audio stream
+		int astream = codec.encode_add_audio_stream_copy(data, ac);
+		if (astream < 0) {
+			codec.decode_close(mdata);
+			mdata = IntPtr.Zero;
+		}
+
+		// Write file header and start encoding
 		if (codec.encode_write_header(data, output) == IntPtr.Zero) {
+			codec.decode_close(mdata);
 			codec.encode_close(data);
 			return 1;
 		}
 
-		// Open raw file for encoding input
+		// Open sequence dump file
 		BinaryReader br = new BinaryReader(File.OpenRead(export.OutFile));
-		try {
-			for (;;) {
-				byte[] chdata = ReadFrame(br);
-				IntPtr frame = codec.encode_channels(data,
-						chdata, channels);
-				if (codec.encode_write_video_frame(data,
-							frame) == 0)
-					break;
+		if (br == null) {
+			codec.decode_close(mdata);
+			codec.encode_close(data);
+			return 1;
+		}
+
+		// Frame processing
+		IntPtr apkt = IntPtr.Zero, vframe = IntPtr.Zero;
+		for (;;) {
+			// Read audio packet from media file
+			if (mdata != IntPtr.Zero && apkt == IntPtr.Zero) {
+				for (;;) {
+					IntPtr pkt;
+					int got, video;
+					pkt = codec.decode_read_packet(mdata, out got, out video);
+					if (got == 0)
+						break;
+					else if (video == 0) {
+						apkt = pkt;
+						break;
+					} else {
+						codec.decode_free_packet(pkt);
+						continue;
+					}
+				}
 			}
-		} catch (Exception /*e*/) {
-			//Console.WriteLine("Exception: " + e.ToString());
+			// Read rendering frame from sequence dump
+			if (vframe == IntPtr.Zero) {
+				byte[] chdata = ReadFrame(br);
+				if (chdata != null)
+					vframe = codec.encode_channels(data, chdata, channels);
+			}
+			// Write audio packet or video frame
+			int ret = codec.encode_write_packet_or_frame(data, apkt, vframe);
+			if (ret == 0)
+				apkt = IntPtr.Zero;
+			else if (ret == 1)
+				vframe = IntPtr.Zero;
+			else
+				break;
 		}
 
 		// Close files
+		codec.decode_close(mdata);
 		codec.encode_close(data);
 		br.Close();
 		return 0;
 	}
 
-	private static int decode(string input, string output)
+	private static int Decode(string input, string output)
 	{
 		// Open video file for decoding input
 		IntPtr cmtp = new IntPtr();

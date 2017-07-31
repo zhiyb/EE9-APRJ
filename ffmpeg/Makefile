@@ -2,7 +2,8 @@
 
 PRG	= dec_enc avio_reading metadata encoding decoding audio
 LIB	= libcodec.so
-EXE	= test.exe
+EXE	= codec.exe
+MONO	= MONO_IOMAP=all mono
 
 #CROSS	= mipsel-linux-
 OPTIMIZE	:= -g -O3
@@ -25,17 +26,18 @@ libs:
 	$(MAKE) $(LIB) LIBCFLAGS=-fPIC
 
 $(PRG): %: %.o
-	$(LD) $(OPTIMIZE) -o $@ $^ $(LIBS)
+	$(LD) $(OPTIMIZE) -o $@ $< $(LIBS)
 
 %.exe: %.cs
 	mcs /out:$@ $< /r:System.dll
 
 audio: LIBS	+= -L. -lcodec -Wl,--rpath=$(PWD)
 
-test.exe: libs
+audio: libs
+codec.exe: libs
 
 lib%.so: %.o
-	$(CXX) -shared $(OPTIMIZE) -o $@ $^ $(LIBS)
+	$(CXX) -shared $(OPTIMIZE) -o $@ $< $(LIBS)
 
 %.o: %.cpp
 	$(CXX) -c $(OPTIMIZE) $(CXXFLAGS) -o $@ $<
@@ -80,8 +82,8 @@ psnr: psnr.sh out.mp4 out.enc.enc.mp4
 out.mp4: encoding $(SEQ)_Network.xml
 	./$^ $@ $(CODEC)
 
-%.test_dec.raw: test.exe %.mp4
-	mono $^ $@
+%.test_dec.raw: codec.exe %.mp4
+	$(MONO) $^ $@
 
 %.raw: decoding %.mp4
 	./$^ $@
@@ -89,8 +91,8 @@ out.mp4: encoding $(SEQ)_Network.xml
 %.hd: %.raw
 	hd $< > $@
 
-%.test_enc.mp4: test.exe %.raw
-	mono $< $*_Network.xml $@
+%.test_enc.mp4: codec.exe %.raw
+	$(MONO) $< $*_Network.xml $@
 
 %.enc.mp4: encoding %.raw
 	./$< $*_Network.xml $@ $(CODEC)

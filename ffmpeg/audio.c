@@ -52,11 +52,13 @@ int main(int argc, char *argv[])
 		void *pkt = decode_read_packet(dp, &got, &video);
 		if (!got)
 			break;
+		//log_packet_data(dp, pkt);
 		if (video) {
 			decode_free_packet(pkt);
 			vframe++;
 		} else {
-			encode_write_audio_packet(ep, ac, pkt);
+			encode_write_packet_or_frame(ep, pkt, NULL);
+			//encode_write_audio_packet(ep, pkt);
 			aframe++;
 		}
 	}

@@ -11,6 +11,7 @@ typedef struct data_t data_t;
 
 void init();
 int version();
+void log_packet_data(const data_t *data, const AVPacket *pkt);
 AVCodec *find_codec(const char *codec_name);
 
 // Video encoder
@@ -19,9 +20,11 @@ int encode_add_audio_stream_copy(data_t *data, AVCodecContext *dec_ac);
 int encode_add_video_stream(data_t *data, AVCodec *vcodec,
 		const char *pix_fmt_name, int resolution, int channels);
 data_t *encode_write_header(data_t *data, const char *file);
-int encode_write_audio_packet(data_t *data, AVCodecContext *ac, AVPacket *pkt);
+int encode_write_audio_packet(data_t *data, AVPacket *pkt);
 int encode_write_audio_frame(data_t *data, AVFrame *frame);
 int encode_write_video_frame(data_t *data, AVFrame *frame);
+// Audio packet (0), video frame (1) or none (-1)
+int encode_write_packet_or_frame(data_t *data, AVPacket *pkt, AVFrame *frame);
 void encode_close(data_t *data);
 
 // Video decoder

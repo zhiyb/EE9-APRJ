@@ -68,6 +68,11 @@ static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
 			pkt->stream_index);
 }
 
+void log_packet_data(const data_t *data, const AVPacket *pkt)
+{
+	log_packet(data->fmt_ctx, pkt);
+}
+
 AVCodec *find_codec(const char *codec_name)
 {
 	AVCodec *codec = avcodec_find_encoder_by_name(codec_name);
@@ -202,6 +207,9 @@ int encode_add_audio_stream_copy(data_t *data, AVCodecContext *dec_ac)
 				"Failed allocating output audio stream\n");
 		return -1;
 	}
+	out_stream->id = fmt_ctx->nb_streams - 1;
+	av_log(NULL, AV_LOG_INFO, "New audio stream %d for %p\n",
+			out_stream->id, fmt_ctx);
 
 	// Configure codec parameters
 	AVCodecContext *ac = out_stream->codec;
@@ -236,6 +244,9 @@ int encode_add_video_stream(data_t *data, AVCodec *vcodec,
 				"Failed allocating output video stream\n");
 		return -1;
 	}
+	out_stream->id = fmt_ctx->nb_streams - 1;
+	av_log(NULL, AV_LOG_INFO, "New video stream %d for %p\n",
+			out_stream->id, fmt_ctx);
 
 	AVCodecContext *vc = out_stream->codec;
 	/* resolution must be a multiple of two */
@@ -275,20 +286,22 @@ data_t *encode_write_header(data_t *data, const char *file)
 		vc = fmt_ctx->streams[vstream]->codec;
 	// Init muxer, write file header
 	if (avformat_write_header(fmt_ctx, NULL) < 0) {
-		av_log(NULL, AV_LOG_ERROR, "Error occurred when opening output file");
+		av_log(NULL, AV_LOG_ERROR,
+				"Error occurred when opening output file\n");
 		return 0;
 	}
 	av_dump_format(fmt_ctx, 0, file, 1);
 	return encode_allocate(data, ac, vc);
 }
 
-int encode_write_audio_packet(data_t *data, AVCodecContext *ac, AVPacket *pkt)
+int encode_write_audio_packet(data_t *data, AVPacket *pkt)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	int stream = data->audio.stream;
 	// Prepare packet for muxing
-	//av_packet_rescale_ts(pkt, ac->time_base, fmt_ctx->streams[stream]->time_base);
-	pkt->stream_index = stream;
+	pkt->stream_index = data->audio.stream;
+	// Assuming same timebase as audio stream
+	//log_packet(fmt_ctx, pkt);
 	int ret = av_interleaved_write_frame(fmt_ctx, pkt);
 	av_free_packet(pkt);
 	return ret >= 0;
@@ -307,7 +320,7 @@ int encode_write_audio_frame(data_t *data, AVFrame *frame)
 	// Encode frame
 	int got_output = 0;
 	if (avcodec_encode_audio2(c, &pkt, frame, &got_output) < 0) {
-		av_log(NULL, AV_LOG_ERROR, "Error encoding frame");
+		av_log(NULL, AV_LOG_ERROR, "Error encoding frame\n");
 		av_free_packet(&pkt);
 		return 0;
 	}
@@ -328,7 +341,6 @@ AVFrame *encode_channels(data_t *data, void *fp, int channels)
 	AVCodecContext *c = fmt_ctx->streams[data->video.stream]->codec;
 	AVFrame *iframe = data->iframe, *oframe = data->oframe;
 	struct SwsContext *sc = data->sc;
-	AVRational time_base = {data->resolution, 1000};
 
 	// Generate input frame
 	uint8_t *ptr = iframe->data[0];
@@ -342,9 +354,8 @@ AVFrame *encode_channels(data_t *data, void *fp, int channels)
 	}
 	sws_scale(sc, (void *)iframe->data, iframe->linesize, 0, c->height,
 			(void *)oframe->data, oframe->linesize);
-	oframe->pts = av_rescale_q_rnd(data->pts++,
-			time_base,
-			fmt_ctx->streams[0]->time_base,
+	oframe->pts = av_rescale_q_rnd(data->pts++, c->time_base,
+			fmt_ctx->streams[data->video.stream]->time_base,
 			(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 	return oframe;
 }
@@ -362,7 +373,7 @@ int encode_write_video_frame(data_t *data, AVFrame *frame)
 	// Encode frame
 	int got_output = 0;
 	if (avcodec_encode_video2(c, &pkt, frame, &got_output) < 0) {
-		av_log(NULL, AV_LOG_ERROR, "Error encoding frame");
+		av_log(NULL, AV_LOG_ERROR, "Error encoding frame\n");
 		av_free_packet(&pkt);
 		return 0;
 	}
@@ -373,6 +384,7 @@ int encode_write_video_frame(data_t *data, AVFrame *frame)
 
 	// Prepare packet for muxing
 	pkt.stream_index = data->video.stream;
+	//log_packet(fmt_ctx, &pkt);
 	return av_interleaved_write_frame(fmt_ctx, &pkt) >= 0;
 }
 
@@ -390,7 +402,7 @@ static void encode_flush_video(data_t *data)
 		pkt.size = 0;
 		int got_output = 0;
 		if (avcodec_encode_video2(c, &pkt, NULL, &got_output) < 0) {
-			av_log(NULL, AV_LOG_ERROR, "Error encoding frame");
+			av_log(NULL, AV_LOG_ERROR, "Error encoding frame\n");
 			break;
 		}
 		if (!got_output)
@@ -418,7 +430,7 @@ static void encode_flush_audio(data_t *data)
 		pkt.size = 0;
 		int got_output = 0;
 		if (avcodec_encode_audio2(c, &pkt, NULL, &got_output) < 0) {
-			av_log(NULL, AV_LOG_ERROR, "Error encoding frame");
+			av_log(NULL, AV_LOG_ERROR, "Error encoding frame\n");
 			break;
 		}
 		if (!got_output)
@@ -430,6 +442,24 @@ static void encode_flush_audio(data_t *data)
 			break;
 	}
 	av_write_trailer(fmt_ctx);
+}
+
+int encode_write_packet_or_frame(data_t *data, AVPacket *pkt, AVFrame *frame)
+{
+	int video;
+	if (pkt && frame) {
+		int astream = data->audio.stream, vstream = data->video.stream;
+		AVRational atb = data->fmt_ctx->streams[astream]->time_base;
+		AVRational vtb = data->fmt_ctx->streams[vstream]->time_base;
+		// Assuming audio packet has the same timebase as audio stream
+		video = av_compare_ts(frame->pts, vtb, pkt->pts, atb) < 0;
+	} else
+		video = frame ? 1 : pkt ? 0 : -1;
+	if (video == 0)
+		encode_write_audio_packet(data, pkt);
+	else
+		encode_write_video_frame(data, frame);
+	return video;
 }
 
 void encode_close(data_t *data)
@@ -614,6 +644,9 @@ AVPacket *decode_read_packet(data_t *data, int *got, int *video)
 	*got = ret != AVERROR_EOF;
 	int stream = data->pkt.stream_index;
 	*video = stream == data->video.stream;
+	AVCodecContext *c = fmt_ctx->streams[stream]->codec;
+	av_packet_rescale_ts(&data->pkt,
+			fmt_ctx->streams[stream]->time_base, c->time_base);
 	//log_packet(fmt_ctx, &data->pkt);
 	return &data->pkt;
 }
