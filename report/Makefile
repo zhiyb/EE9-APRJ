@@ -5,6 +5,8 @@ TRG	= $(SRC:%.tex=%.dvi)
 .PHONY: all
 all: $(PDF)
 
+report.pdf: definitions.tex
+
 %.pdf: %.tex
 	pdflatex --shell-escape $<
 	-bibtex $(<:%.tex=%.aux)
@@ -14,6 +16,10 @@ all: $(PDF)
 .PHONY: clean
 clean:
 	rm -f *.aux *.bbl *.blg *.log $(PDF) $(TRG:%.dvi=%.aux) $(TRG:%.dvi=%.bbl) $(TRG:%.dvi=%.blg) $(TRG:%.dvi=%.log) $(TRG:%.dvi=%.out) $(TRG:%.dvi=%.idx) $(TRG:%.dvi=%.ilg) $(TRG:%.dvi=%.ind) $(TRG:%.dvi=%.toc) $(TRG:%.dvi=%.d) $(TRG:%.dvi=%.lof) $(TRG:%.dvi=%.lol) $(TRG:%.dvi=%.lot)
+
+.PHONY: evince
+evince: $(PDF)
+	evince $(PDF)
 
 .PHONY: acrord
 acrord: $(PDF)

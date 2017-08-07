@@ -26,7 +26,9 @@
   \usepackage[caption=false,font=footnotesize]{subfig}
 \fi
 
-\usepackage{listings,color}
+\usepackage[pdftex,dvipsnames]{xcolor}
+\usepackage{listings,xargs}
+\usepackage[colorinlistoftodos,prependcaption,textsize=small]{todonotes}
 
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
@@ -60,6 +62,8 @@
 \newcommand{\tref}[1]{\tablename~\ref{#1}}
 \newcommand{\lref}[1]{LISTING~\ref{#1}}
 
+\input{definitions.tex}
+
 \begin{document}
 
 % paper title
@@ -82,6 +86,8 @@ Vixen 3 is a fully featured, free and open-source application facilitating the d
 
 \hfill \today
 
+\cmt{Insert logo: \url{http://www.imperial.ac.uk/brand-style-guide/visual-identity/the-imperial-logo/}}
+
 \tableofcontents
 
 \section{Introduction}
@@ -94,11 +100,15 @@ However, the execution engine used by Vixen has some computational overheads. Co
 
 To improve the efficiency of real-time playback, a new engine was developed. Instead of having layers of overheads in the original execution engine, the new engine takes pre-rendered sequences directly to display controllers.
 
+\cmt{Video format used to ease management, sharing and editing}
+
 \section{Background}
 
-\subsection{Testing platform}
+\subsection{Testing platforms}
 
-The primary testing platform used in this project is a mid-range laptop running Microsoft Windows. It is capable of developing the Vixen application, but with relatively lower configurations to expose the performance problem of Vixen.
+\subsubsection{Windows based systems}
+
+The primary development platform used in this project is a mid-range laptop running Microsoft Windows. It is capable of developing the Vixen application, but with relatively lower configurations to expose the performance problem of Vixen.
 
 The hardware configurations are listed below:
 
@@ -107,6 +117,20 @@ The hardware configurations are listed below:
 	\item[RAM:]	LPDDR3 8.0GB 1600MHz
 	\item[Disk:]	Solid-state drive
 \end{description}
+
+\subsubsection{Linux based systems}
+\hfill
+\cmt{The NAS server for development, cross-compiling.}
+
+\subsubsection{Embedded systems}
+\hfill
+\cmt{Linux for embedded systems.}
+
+\cmt{Windows IoT? Limitations, not possible.}
+
+\cmt{Raspberry B+, Raspberry Zero W, Raspberry 3 B+.
+
+Noah NP1380?}
 
 \subsection{Vixen overview}
 
@@ -120,15 +144,90 @@ Inside each hardware controller modules, data from multiple channels will be com
 
 Vixen also has a preview display. It maps element outputs to sets of points, possibly arranged as the shapes of actual objects, rendered on a separate window.
 
+\cmt{Insert screenshots...}
+
+\subsection{Similar applications}
+
+\cmt{Further background researches may need to be done, such as analysing other lighting control applications' performances and their implementations.}
+
 \subsection{Microsoft .NET runtime}
+
+\subsubsection{Windows based}
 
 Vixen runs on top of Microsoft's .NET runtime library \cite{platt2002introducing}, using C\# \cite{hejlsberg2003c} as the primary programming language. This makes it very difficult for Vixen to run on other operating system platforms. However, with the help of projects like Mono \cite{de2004mono}, it might be possible to have Vixen running on Linux, particularly embedded Linux on embedded platforms. Having Vixen running on an embedded platform can gives greater flexibility and reduces cost.
 
+\subsubsection{Linux based}
+\hfill
+\cmt{.NET runtime implemented / emulated on Linux platform.}
+
+\begin{enumerate}
+	\item qemu emulator
+	\item wine emulator
+	\item mono library
+\end{enumerate}
+
+\cmt{Selected mono, performance figures?}
+
+\subsection{Codec libraries}
+
+\cmt{Libraries for encoding \& decoding video files}
+
+\cmt{Used because the final processing sequence is similar to video processing}
+
+\cmt{Popular libraries:
+
+ffmpeg, open-source, cross-platform, actively maintained, hardware acceleration;
+
+mplayer(mencoder), open-source, cross-platform, not active, varies forks;
+
+Licensing?
+}
+
+\cmt{Using ffmpeg. Different sections of ffmpeg? Encoding / decoding, IO, resampler / scaler}
+
+\subsection{Popular video encoding formats}
+
+\cmt{Video container: mp4, avi, mkv, ...}
+
+\cmt{Encoding: h264, mpeg, ...}
+
+\cmt{Pixel format: yuv444 vs. yuv420 vs. rgb}
+
+\subsection{Audio render engine}
+
+\cmt{Linux audio structure, multiple libraries...}
+
+\cmt{Windows unified API}
+
+\cmt{fmod: Proprietary, cross-platform, easy-to-use API
+
+Included in Vixen, but out-dated}
+
+\subsection{Performance analysers}
+
+\cmt{Microsoft Visual Studio built-in sampling profiler}
+
+\cmt{Mono profilers, sampling mode}
+
+\cmt{General profilers on Linux, perf}
+
+\subsection{Performance profiling method}
+
+\cmt{Different from generic program profiler: Runtime application specific, with refresh rate etc.}
+
+\cmt{On Linux, statistics files in \texttt{/proc}, CPU jiffies, IO statistics \wn{15}}
+
+\cmt{On Windows, as the \texttt{Process} class used in \texttt{CpuUsage} \wn{15}}
+
 \section{Evaluation}
+
+\subsection{Locale issue}
+
+\cmt{Unable to build Vixen solution because of system locale, special character and file encoding issue. \wn{1}}
 
 \subsection{Original performance}
 
-\fref{fig:original} shows the performance of the original Vixen execution engine. The CPU usage frequently reaches above $90 \%$, while the refresh rate being very unstable around the configured 20 fps. Especially at the first 60 seconds, the refresh rate drops to 5 fps trying to keep up with element updates.
+\fref{fig:original} shows the performance of the original Vixen execution engine. The CPU usage frequently reaches above $90 \%$, while the refresh rate being very unstable around the configured 20 fps. Especially at the first 60 seconds, the refresh rate drops to 5 fps trying to keep up with element updates. \wn{2}
 
 \begin{figure}[t]
     \centering
@@ -137,9 +236,17 @@ Vixen runs on top of Microsoft's .NET runtime library \cite{platt2002introducing
     \label{fig:original}
 \end{figure}
 
-Further analysis using Microsoft Visual Studio's sampling profiler shows, around $65 \%$ of CPU time was wasted between translation layers for generating controller commands, while the actual command assignment taking less than $1 \%$ of CPU time. There are several different command formats possible, for example 8-bit, 16-bit and RGB channels. Therefore, the application need to resolve the actual format of commands from their base type, which is apparently very inefficient in C\#. This process is called \texttt{dispatch} in the source code, it must be reduced or removed to improve performance.
+Further analysis using Microsoft Visual Studio's sampling profiler shows, around $65 \%$ of CPU time was wasted between translation layers for generating controller commands, while the actual command assignment taking less than $1 \%$ of CPU time. There are several different command formats possible, for example 8-bit, 16-bit and RGB channels. Therefore, the application need to resolve the actual format of commands from their base type, which is apparently very inefficient in C\#. This process is called \texttt{dispatch} in the source code, it must be reduced or removed to improve performance. \wn{3}
 
 The implementation of preview display was also inefficient, using around $20 \%$ CPU time in later stages.
+
+\cmt{Different real-world sequence examples}
+
+\subsection{Performance on Linux}
+
+\cmt{Necessary GUI modification, imperfect GUI, tested with mono.}
+
+\cmt{Insert screenshots...}
 
 \section{Extract rendered sequence}
 
@@ -147,7 +254,7 @@ Instead of trying to improve the original execution engine, the performance prob
 
 \subsection{Custom controller}
 
-A custom controller module was developed based on one of its existing controllers. This controller uses TCP connection to transfer display data, supporting up to 65535 channels. A corresponding server application that simulates a multi-channel display was also developed using C++ and OpenGL \cite{shreiner2009opengl} rendering. Having this configuration allows debugging real-time display output without the need of a complex actual lighting controller setup. Data dumping, performance and statistical analysis can also be easily achieved.
+A custom controller module was developed based on one of its existing controllers. This controller uses TCP connection to transfer display data, supporting up to 65535 channels. A corresponding server application that simulates a multi-channel display was also developed using C++ and OpenGL \cite{shreiner2009opengl} rendering. Having this configuration allows debugging real-time display output without the need of a complex actual lighting controller setup. Data dumping, performance and statistical analysis can also be easily achieved. \wn{4}
 
 The server application consumes less than $3 \%$ of CPU time under 50 fps refresh rate, which is negligible. It can also be executed on other computers, simulating real world network connection scenarios.
 
@@ -155,13 +262,49 @@ The server application consumes less than $3 \%$ of CPU time under 50 fps refres
 
 Although the custom controller module is capable of dumping outputs, it would not give the indication of sequence start and end information, and can have unstable frame rates influenced by CPU usage. Therefore, the sequence export function from sequence editor was used to dumping outputs.
 
-The export function was originally used to convert the display sequence to formats recognisable by other applications and controllers. Most importantly, it renders the sequence using a manual timing source, gives accurate constant interval data dumps and controller channel mapping information. A customised data format was added to the export wizard, that can be later used for playback.
+The export function was originally used to convert the display sequence to formats recognisable by other applications and controllers. Most importantly, it renders the sequence using a manual timing source, gives accurate constant interval data dumps and controller channel mapping information. A customised data format was added to the export wizard, that can be later used for playback. \wn{5}
+
+\cmt{Example XML file content?}
+
+\cmt{Custom resolution modification?}
+
+\cmt{Insert screenshots...}
+
+\section{Controller specific implementations}
+
+\cmt{Alternative baseline implementations for performance comparisons}
+
+\subsection{Qt2 based on handheld device}
+
+\cmt{Qt2 based, Noah NP1380, performance... \wn{10}}
+
+\subsection{Minimal C\# implementation}
+
+\cmt{VixenLinky, TCP data transfer \wn{11}}
+
+\cmt{Performance on different hardware platforms \wn{12}}
+
+\cmt{\texttt{BinaryReader} IO performance and buffer size \wn{14}}
 
 \section{The new playback engine}
 
-Based on the exported data format, an independent playback engine was developed and integrated into Vixen.
+Based on the exported data format, an independent playback engine was developed and integrated into Vixen. \wn{6}
 
-\subsection{Performance}
+\cmt{The details of implementation, processing, performance critical steps skipped. \wn{6}}
+
+\cmt{XML reading, serialiser}
+
+\cmt{User interface..., does not support preview}
+
+\cmt{Insert screenshots...}
+
+\subsection{Performance and optimisations}
+
+\cmt{Export performance and file sizes}
+
+\cmt{Threading and mutex lock structure difference}
+
+\cmt{Dictionary lookup replaced \wn{14}}
 
 \fref{fig:playback} shows the performance of the playback engine. At the first and the last few seconds, the playback stopped, the system was using the original execution engine in idle. However, this engine still uses about $30 \%$ of CPU time. But, as soon as playback started, CPU usages drops to around $6 \%$ with stable refresh frame rates.
 
@@ -178,35 +321,121 @@ A separate menu entry was added to control the new playback engine. When the eng
 
 \subsection{Audio playback}
 
-The network configuration XML file generated from export was modified to include the audio media file used in the original sequence. This field was later used in the playback engine for audio playback, using the same audio functions from sequence playback.
+The network configuration XML file generated from export was modified to include the audio media file used in the original sequence. This field was later used in the playback engine for audio playback, using the same audio functions from sequence playback. \wn{7}
 
 \subsection{Scheduler integration}
 
-The playback control was also integrated with built-in schedulers. It can therefore be scheduled to execute multiple times at specific time, possibly with original sequence schedules.
+The playback control was also integrated with built-in schedulers. It can therefore be scheduled to execute multiple times at specific time, possibly with original sequence schedules. \wn{8}
+
+\cmt{Insert screenshots...}
 
 The scheduler pre-process all scheduled items first. The sequences need to be pre-rendered, which can take a significant amount of time. The new playback engine does not need pre-process, can be directly executed within seconds.
 
-\section{Future works}
+\section{Console application}
 
-\subsection{Background research}
+\cmt{Implemented CUI version of Vixen. \wn{13}}
 
-Further background researches may need to be done, such as analysing other lighting control applications' performances and their implementations.
+\subsection{Implementation}
 
-\subsection{Implementation improvements}
+\cmt{Uses original codebase (\texttt{Vixen.dll}), but only minimal initialisation and no GUI.
 
+Loads modules from DLLs, especially controllers support.
+
+Configuration modification? Modify XML directly, or program interfaces.}
+
+\subsection{Loading performance}
+
+\cmt{DLL module loading times...}
+
+\cmt{Configuration file sizes... Tidy implemented}
+
+\cmt{Profilers... \wn{14}}
+
+\subsection{Execution performance}
+
+\cmt{Slower than controller specific, analysis}
+
+\cmt{Profilers...}
+
+\subsection{Platform performance benchmark}
+
+\cmt{Now possible with complete implementation on Linux}
+
+\cmt{Unlimited playback and / or controller update speed for IO / processing comparison. \wn{15}}
+
+\section{Video data format}
+
+\subsection{Similarity}
+
+\cmt{The whole process looks similar to animation designing, video rendering and playback}
+
+\subsection{Implementation}
+
+\cmt{Using ffmpeg for encoding and muxing in export, decoding and demuxing in playback}
+
+\cmt{Using fmod for audio rendering to selectable devices}
+
+\cmt{Using Interop for interfacing C/C++ DLLs to C\#. However, complex C/C++ data structure and processing require additional encapsulation in C/C++ \wn{17}
+
+C/C++ and C\# implementation of basic encoding / decoding for testing.
+
+Audio muxing and metadata for combining files. \wn{18}
+
+\texttt{Makefile} and \texttt{diff} for automatic building and testing. \wn{17}}
+
+\subsection{Benefits}
+
+\cmt{Uses video to combine sequence dump, audio and configuration information into a single file, with reduced size \wn{16}}
+
+\cmt{Easy sharing, editing software exists, sophisticated compress methods, hardware acceleration possible}
+
+\subsection{Limitations}
+
+\cmt{Small resolution for large number of channels, may not leverage full advantage of hardware video decoding}
+
+\cmt{Discrete rapid-changing unassociated continuous channels not suitable for common video encoding methods and pixel formats:
+
+Colour space, colour degrade, channel cross-talk}
+
+\subsection{Integration}
+
+\cmt{C\# interface, integrated directly to \texttt{Vixen.Sys} \wn{18}}
+
+\cmt{Using newer version of fmod\wn{19}}
+
+\cmt{Integrated to playback engine, switch based on file extension}
+
+\subsection{Performance}
+
+\cmt{Varies encoding, formats, quality factor... Insert data table \wn{16}}
+
+\section{User Guide}
+
+\cmt{\url{http://www.imperial.ac.uk/electrical-engineering/internal/current-students-course-handbook/msc-individual-research-project/writing-the-report-}}
+
+\section{Conclusion}
+
+\cmt{Varies methods of analysing and optimising resource intensive application. Now possible on an embedded platform for greater flexibility and power efficiency.}
+
+\subsection{Limitations}
+
+\cmt{Lower performance than controller dedicated applications
+
+Video format not very useful for editing
+
+Increased user interface complexity}
+
+\subsection{Future works}
+
+\subsubsection{Implementation improvements}
+\hfill
 The integration between original execution engine and the new playback engine can be improved. Currently, the playback engine takes priority over the execution engine, which might cause unwanted behaviour under certain circumstances. Playback contexts may also be implemented to cache multiple playback sequences information. The engines should be switched off during idle to further reduce CPU usage.
 
 Support for preview display was not implemented for the playback engine, since the preview works in elements workspace whereas the playback engine works entirely in hardware controller workspace. It might be possible to extract mapping configurations during export, but support for preview is considered optional with lower priority.
 
-\subsection{Embedded platforms}
-
-Porting Vixen, or only the new playback engine, to an embedded platform gives greater flexibility to lighting show projects. It might be possible with open source .NET implementations. Otherwise, using the customised export file format, the playback engine and controllers can be implemented using other programming languages such as C/C++, that is more efficient and appropriate for embedded platforms.
-
-\subsection{Playback file format}
-
-Exporting the 06:49 sample sequence in 20 fps results in a 337 MiB data file. It is possible to further reduce the file size by improving data structure and applying compression.
-
-The process of pre-rendering, then playback the sequence is very similar to animated video rendering. The sequences can be exported and playback as videos, by mapping particular video pixels to controller channels. It might be beneficial to support conversion between video files and playback data formats, to allow lighting effects designing using commercially available video editing tools.
+\subsubsection{Video channel mapping}
+\hfill
+\cmt{Map channels as preview layout? For easy preview and modification using existing software.}
 
 % references section
 \bibliographystyle{IEEEtran}
