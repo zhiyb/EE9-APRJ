@@ -824,7 +824,7 @@ unsigned int fmod_create_stream(data_t *data, data_t *dec)
 	exinfo.cbsize            = sizeof(FMOD_CREATESOUNDEXINFO);
 	exinfo.numchannels       = c->channels;
 	exinfo.defaultfrequency  = c->sample_rate;
-	//exinfo.decodebuffersize  = 44100;
+	exinfo.decodebuffersize  = c->sample_rate / 10u;
 	exinfo.format            = FMOD_SOUND_FORMAT_PCM16;
 	exinfo.pcmreadcallback   = pcmreadcallback;
 	exinfo.pcmsetposcallback = pcmsetposcallback;
