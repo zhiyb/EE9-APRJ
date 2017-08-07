@@ -3,7 +3,9 @@
 #include <string.h>
 #include <malloc.h>
 #include <math.h>
+#include <pthread.h>
 
+#include <libavcodec/version.h>
 #include <libavformat/avformat.h>
 #include <libavfilter/avfiltergraph.h>
 #include <libavutil/opt.h>
@@ -15,8 +17,17 @@
 #include <libavutil/samplefmt.h>
 #include <libswscale/swscale.h>
 
+#include <fmod.h>
+
 /* {{{ Structure and basics */
+typedef struct {
+	pthread_mutex_t mut;
+	uint8_t *data, *rp;
+	unsigned int size, memsize;
+} audio_buf_t;
+
 typedef struct data_t {
+	// ffmpeg encoding & decoding related
 	AVFormatContext *fmt_ctx;
 	AVFrame *iframe, *oframe;
 	AVPacket pkt;
@@ -27,17 +38,28 @@ typedef struct data_t {
 	struct {
 		int stream;
 	} audio, video;
+
+	// FMOD related
+	FMOD_SYSTEM *system;
+	FMOD_SOUND *sound;
+	FMOD_CHANNEL *channel;
+	audio_buf_t buf;
 } data_t;
 
-void init()
+void codec_init()
 {
 	av_register_all();
 	avfilter_register_all();
 }
 
-int version()
+int codec_version()
 {
-	return 0x1234;
+	return LIBAVCODEC_VERSION_INT;
+}
+
+data_t *codec_alloc()
+{
+	return (data_t *)calloc(1, sizeof(data_t));
 }
 
 static void free_data(data_t *data)
@@ -54,6 +76,10 @@ static void free_data(data_t *data)
 		av_frame_free(&data->iframe);
 	if (data->fmt_ctx)
 		avformat_free_context(data->fmt_ctx);
+}
+
+void codec_free(data_t *data)
+{
 	free(data);
 }
 
@@ -160,7 +186,7 @@ error:
 	return 0;
 }
 
-data_t *encode_open_output(const char *file, const char *comment)
+int encode_open_output(data_t *data, const char *file, const char *comment)
 {
 	// Open output media file
 	AVFormatContext *fmt_ctx;
@@ -180,13 +206,10 @@ data_t *encode_open_output(const char *file, const char *comment)
 	if (comment)
 		av_dict_set(&fmt_ctx->metadata, "comment", comment, 0);
 
-	data_t *data = (data_t *)calloc(1, sizeof(data_t));
-	if (!data)
-		return 0;
 	data->fmt_ctx = fmt_ctx;
 	data->audio.stream = -1;
 	data->video.stream = -1;
-	return data;
+	return 1;
 }
 
 int encode_add_audio_stream_copy(data_t *data, AVCodecContext *dec_ac)
@@ -255,7 +278,7 @@ int encode_add_video_stream(data_t *data, AVCodec *vcodec,
 	vc->height = (unsigned int)round(sqrt(ch)) & ~1u;
 	vc->width = (ch + vc->height - 1u) / vc->height;
 	vc->width = (vc->width + 1u) & ~1u;
-	out_stream->time_base = vc->time_base = (AVRational){resolution, 1000};
+	out_stream->time_base = vc->time_base = av_make_q(resolution, 1000);
 	if (pix_fmt_name != 0)
 		vc->pix_fmt = av_get_pix_fmt(pix_fmt_name);
 	if (vcodec->id == AV_CODEC_ID_H264)
@@ -345,7 +368,7 @@ AVFrame *encode_channels(data_t *data, void *fp, int channels)
 
 	// Generate input frame
 	uint8_t *ptr = iframe->data[0];
-	unsigned int w = iframe->width * 3u;
+	int w = iframe->width * 3u;
 	while (channels) {
 		unsigned int s = channels > w ? w : channels;
 		memcpy(ptr, fp, s);
@@ -481,11 +504,10 @@ void encode_close(data_t *data)
 /* }}} */
 
 /* {{{ Decode */
-static data_t *decode_allocate(AVCodecContext *ac, AVCodecContext *vc)
+static data_t *decode_allocate(data_t *data, AVCodecContext *ac, AVCodecContext *vc)
 {
 	AVFrame *iframe = 0, *oframe = 0;
 	struct SwsContext *sc = 0;
-	data_t *data = 0;
 
 	// Allocate input frame
 	iframe = av_frame_alloc();
@@ -525,9 +547,6 @@ static data_t *decode_allocate(AVCodecContext *ac, AVCodecContext *vc)
 	}
 
 done:
-	data = (data_t *)calloc(1, sizeof(data_t));
-	if (!data)
-		goto error;
 	data->iframe = iframe;
 	data->oframe = oframe;
 	data->sc = sc;
@@ -575,7 +594,7 @@ static int decode_find_stream(const char *file, AVFormatContext *fmt_ctx,
 	return stream;
 }
 
-data_t *decode_open_input(const char *file, char **comment, int *gota, int *gotv)
+int decode_open_input(data_t *data, const char *file, char **comment, int *gota, int *gotv)
 {
 	AVFormatContext *fmt_ctx = NULL;
 	if (avformat_open_input(&fmt_ctx, file, NULL, NULL) < 0) {
@@ -608,13 +627,11 @@ data_t *decode_open_input(const char *file, char **comment, int *gota, int *gotv
 		*comment = tag ? tag->value : NULL;
 	}
 	// Allocate data structure
-	data_t *data = decode_allocate(ac, vc);
-	if (!data)
-		return 0;
+	decode_allocate(data, ac, vc);
 	data->fmt_ctx = fmt_ctx;
 	data->audio.stream = astream;
 	data->video.stream = vstream;
-	return data;
+	return 1;
 }
 
 AVCodecContext *decode_context(data_t *data, const int video)
@@ -652,6 +669,25 @@ AVPacket *decode_read_packet(data_t *data, int *got, int *video)
 	return &data->pkt;
 }
 
+AVFrame *decode_audio_frame(data_t *data, AVPacket *pkt)
+{
+	AVFormatContext *fmt_ctx = data->fmt_ctx;
+	AVFrame *iframe = data->iframe, *oframe = data->oframe;
+	int stream = pkt->stream_index;
+	AVCodecContext *c = fmt_ctx->streams[stream]->codec;
+
+	int got;
+	if (avcodec_decode_audio4(c, iframe, &got, pkt) < 0) {
+		av_log(NULL, AV_LOG_ERROR, "Error decoding video frame\n");
+		av_free_packet(pkt);
+		return NULL;
+	}
+	av_free_packet(pkt);
+	if (!got)
+		return NULL;
+	return iframe;
+}
+
 AVFrame *decode_video_frame(data_t *data, AVPacket *pkt)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
@@ -680,7 +716,7 @@ static void *decode_write_output(data_t *data, int channels)
 {
 	data->data = realloc(data->data, channels);
 	AVFrame *iframe = data->iframe, *oframe = data->oframe;
-	unsigned int w = oframe->width * 3u;
+	int w = oframe->width * 3u;
 	uint8_t *ptr = oframe->data[0], *dptr = data->data;
 	while (channels) {
 		unsigned int s = channels < w ? channels : w;
@@ -709,5 +745,178 @@ void decode_close(data_t *data)
 	if (data->oframe)
 		av_freep(data->oframe->data);
 	free_data(data);
+}
+/* }}} */
+
+/* {{{ FMOD */
+unsigned int fmod_init(data_t *data)
+{
+	unsigned int result;
+	FMOD_SYSTEM *system;
+	result = FMOD_System_Create(&system);
+	if (result != FMOD_OK) {
+		av_log(NULL, AV_LOG_ERROR, "FMOD create system failed: %u\n", result);
+		return result;
+	}
+	result = FMOD_System_Init(system, 32, FMOD_INIT_NORMAL, 0);
+	if (result != FMOD_OK) {
+		av_log(NULL, AV_LOG_ERROR, "FMOD system init failed: %u\n", result);
+		FMOD_System_Release(system);
+		return result;
+	}
+	data->system = system;
+	return FMOD_OK;
+}
+
+unsigned int fmod_version(data_t *data)
+{
+	unsigned int version;
+	unsigned int result = FMOD_System_GetVersion(data->system, &version);
+	if (result != FMOD_OK) {
+		av_log(NULL, AV_LOG_ERROR, "FMOD get version failed: %u\n", result);
+		return 0;
+	}
+	return version;
+}
+
+FMOD_RESULT F_CALLBACK pcmreadcallback(FMOD_SOUND *sound, void *data, unsigned int datalen)
+{
+	audio_buf_t *buf;
+	FMOD_Sound_GetUserData(sound, (void **)&buf);
+	if (!buf) {
+		av_log(NULL, AV_LOG_ERROR, "FMOD RDCB: User data is null\n");
+		return FMOD_ERR_FILE_BAD;
+	}
+	pthread_mutex_lock(&buf->mut);
+	unsigned int size = buf->size - (buf->rp - buf->data);
+	if (size < datalen) {
+		pthread_mutex_unlock(&buf->mut);
+		av_log(NULL, AV_LOG_WARNING, "FMOD RDCB: Requested: %u, available: %u\n", datalen, size);
+		return FMOD_ERR_NOTREADY;
+	}
+	memcpy(data, buf->rp, datalen);
+	buf->rp += datalen;
+	pthread_mutex_unlock(&buf->mut);
+	return FMOD_OK;
+}
+
+FMOD_RESULT F_CALLBACK pcmsetposcallback(FMOD_SOUND *sound, int subsound,
+					 unsigned int position, FMOD_TIMEUNIT postype)
+{
+	// This is useful if the user calls Channel::setPosition and you want to seek your data accordingly.
+	return FMOD_OK;
+}
+
+unsigned int fmod_create_stream(data_t *data, data_t *dec)
+{
+	if (dec->audio.stream < 0) {
+		av_log(NULL, AV_LOG_WARNING, "Audio stream not found\n");
+		return FMOD_ERR_FILE_BAD;
+	}
+	AVStream *stream = dec->fmt_ctx->streams[dec->audio.stream];
+	AVCodecContext *c = stream->codec;
+
+	pthread_mutex_init(&data->buf.mut, NULL);
+
+	FMOD_CREATESOUNDEXINFO exinfo;
+	// Create and play the sound
+	memset(&exinfo, 0, sizeof(FMOD_CREATESOUNDEXINFO));
+	exinfo.cbsize            = sizeof(FMOD_CREATESOUNDEXINFO);
+	exinfo.numchannels       = c->channels;
+	exinfo.defaultfrequency  = c->sample_rate;
+	//exinfo.decodebuffersize  = 44100;
+	exinfo.format            = FMOD_SOUND_FORMAT_PCM16;
+	exinfo.pcmreadcallback   = pcmreadcallback;
+	exinfo.pcmsetposcallback = pcmsetposcallback;
+	exinfo.userdata = &data->buf;
+
+	double fn = (double)stream->duration * (double)c->sample_rate;
+	fn *= (double)stream->time_base.num / (double)stream->time_base.den;
+	exinfo.length = (int)round(fn) * exinfo.numchannels * sizeof(short);
+
+	FMOD_SOUND *sound = 0;
+	FMOD_MODE mode = FMOD_CREATESTREAM | FMOD_OPENUSER | FMOD_OPENRAW | FMOD_LOOP_OFF;
+	unsigned int result = FMOD_System_CreateStream(data->system, 0, mode, &exinfo, &sound);
+	if (result != FMOD_OK) {
+		av_log(NULL, AV_LOG_ERROR, "FMOD create sound failed: %u\n", result);
+		return result;
+	}
+	FMOD_CHANNEL *channel = 0;
+	result = FMOD_System_PlaySound(data->system, sound, 0, 1, &channel);
+	if (result != FMOD_OK) {
+		av_log(NULL, AV_LOG_ERROR, "FMOD play sound failed: %u\n", result);
+		FMOD_Sound_Release(sound);
+		return result;
+	}
+	data->sound = sound;
+	data->channel = channel;
+	return FMOD_OK;
+}
+
+unsigned int fmod_play(data_t *data)
+{
+	unsigned int result = FMOD_Channel_SetPaused(data->channel, 0);
+	if (result != FMOD_OK)
+		av_log(NULL, AV_LOG_ERROR, "FMOD unpause failed: %u\n", result);
+	return result;
+}
+
+void fmod_close(data_t *data)
+{
+	unsigned int result;
+	if (data->sound)
+		if ((result = FMOD_Sound_Release(data->sound)) != FMOD_OK)
+			av_log(NULL, AV_LOG_WARNING, "FMOD sound release failed: %u\n", result);
+	if (data->system) {
+		if ((result = FMOD_System_Close(data->system)) != FMOD_OK)
+			av_log(NULL, AV_LOG_WARNING, "FMOD system close failed: %u\n", result);
+		if ((result = FMOD_System_Release(data->system)) != FMOD_OK)
+			av_log(NULL, AV_LOG_WARNING, "FMOD system release failed: %u\n", result);
+	}
+	if (data->buf.data)
+		free(data->buf.data);
+}
+
+void fmod_queue_frame(data_t *data, AVFrame *frame)
+{
+	audio_buf_t *buf = &data->buf;
+	pthread_mutex_lock(&buf->mut);
+	size_t size = frame->nb_samples * frame->channels * sizeof(short);
+	// Clear used buffer space
+	if (buf->rp != buf->data) {
+		buf->size -= buf->rp - buf->data;
+		memmove(buf->data, buf->rp, buf->size);
+		buf->rp = buf->data;
+	}
+	// Allocate new buffer size
+	while (buf->size + size > buf->memsize) {
+		buf->memsize += 4096u;
+		uint8_t *data = (uint8_t *)realloc(buf->data, buf->memsize);
+		buf->rp = buf->data = data;
+	}
+	// Copy frame data
+	int16_t *p = (int16_t *)(buf->data + buf->size);
+	int16_t *pp[2] = {(int16_t *)frame->data[0], (int16_t *)frame->data[1]};
+	buf->size += size;
+	while (size) {
+		memcpy(p++, pp[0]++, 2);
+		memcpy(p++, pp[1]++, 2);
+		size -= 4;
+	}
+	pthread_mutex_unlock(&buf->mut);
+}
+
+unsigned int fmod_update(data_t *data)
+{
+	return FMOD_System_Update(data->system);
+}
+
+int fmod_is_playing(data_t *data)
+{
+	FMOD_OPENSTATE state;
+	unsigned int result = FMOD_Sound_GetOpenState(data->sound, &state, 0, 0, 0);
+	if (result != FMOD_OK)
+		return 0;
+	return state == FMOD_OPENSTATE_PLAYING;
 }
 /* }}} */

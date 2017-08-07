@@ -6,6 +6,7 @@ metadata
 audio
 *.o
 *.so
+*.so.*
 *.exe
 *.pgm
 *.mp4

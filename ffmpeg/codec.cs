@@ -10,17 +10,24 @@ public class codec
 {
 	// Basics
 	[DllImport("codec.dll")]
-	public static extern void init();
+	public static extern void codec_init();
 
 	[DllImport("codec.dll")]
-	public static extern int version();
+	public static extern int codec_version();
 
 	[DllImport("codec.dll", CharSet = CharSet.Ansi)]
 	public static extern IntPtr find_codec(string codec_name);
 
+	[DllImport("codec.dll")]
+	public static extern IntPtr codec_alloc();
+
+	[DllImport("codec.dll")]
+	public static extern void codec_free(IntPtr data);
+
 	// Video encoder
 	[DllImport("codec.dll", CharSet = CharSet.Ansi)]
-	public static extern IntPtr encode_open_output(string file, string comment);
+	public static extern int encode_open_output(IntPtr data,
+			string file, string comment);
 
 	[DllImport("codec.dll")]
 	public static extern int encode_add_audio_stream_copy(IntPtr data, IntPtr dec_ac);
@@ -41,7 +48,8 @@ public class codec
 
 	// Video decoder
 	[DllImport("codec.dll")]
-	public static extern IntPtr decode_open_input(string file, ref IntPtr comment,
+	public static extern int decode_open_input(IntPtr data,
+			string file, ref IntPtr comment,
 			out int gota, out int gotv);
 
 	[DllImport("codec.dll")]
@@ -50,6 +58,9 @@ public class codec
 	[DllImport("codec.dll")]
 	public static extern IntPtr decode_read_packet(IntPtr data,
 			out int got, out int video);
+
+	[DllImport("codec.dll")]
+	public static extern IntPtr decode_audio_frame(IntPtr data, IntPtr pkt);
 
 	[DllImport("codec.dll")]
 	public static extern IntPtr decode_video_frame(IntPtr data, IntPtr pkt);
@@ -68,6 +79,31 @@ public class codec
 	[DllImport("codec.dll")]
 	public static extern IntPtr decode_channels(IntPtr data, IntPtr frame,
 			int channels);
+
+	// FMOD audio engine
+	[DllImport("codec.dll")]
+	public static extern uint fmod_init(IntPtr data);
+
+	[DllImport("codec.dll")]
+	public static extern uint fmod_version(IntPtr data);
+
+	[DllImport("codec.dll")]
+	public static extern uint fmod_create_stream(IntPtr data, IntPtr dec);
+
+	[DllImport("codec.dll")]
+	public static extern uint fmod_play(IntPtr data);
+
+	[DllImport("codec.dll")]
+	public static extern void fmod_close(IntPtr data);
+
+	[DllImport("codec.dll")]
+	public static extern void fmod_queue_frame(IntPtr data, IntPtr frame);
+
+	[DllImport("codec.dll")]
+	public static extern uint fmod_update(IntPtr data);
+
+	[DllImport("codec.dll")]
+	public static extern int fmod_is_playing(IntPtr data);
 }
 
 [XmlRoot("Vixen3_Export")]
@@ -104,18 +140,19 @@ public class HelloWorld
 	[STAThread]
 	private static int Main(string[] args)
 	{
-		Console.WriteLine("libcodec version: " + codec.version());
-
 		if (args.Length != 2) {
 			Console.WriteLine("usage: test.exe input output");
 			return 1;
 		}
+
+		codec.codec_init();
+		Console.WriteLine("libcodec version: " + codec.codec_version());
+
 		string input = args[0], output = args[1];
 		bool enc = input.EndsWith(".xml", true, null);
 		Console.WriteLine((enc ? "Encoding " : "Decoding ") +
 				input + " to " + output);
 
-		codec.init();
 		if (enc)
 			return Encode(input, output);
 		else
@@ -205,9 +242,12 @@ public class HelloWorld
 		int channels = con.StartChan + con.Channels - 1;
 		Console.WriteLine("Encoding " + channels + " channels to " + output);
 
-		// Open video file for encoding output
-		IntPtr data = codec.encode_open_output(output, strXml);
+		IntPtr data = codec.codec_alloc();
 		if (data == IntPtr.Zero)
+			return 1;
+
+		// Open video file for encoding output
+		if (codec.encode_open_output(data, output, strXml) == 0)
 			return 1;
 
 		// Find video encoding codec
@@ -228,8 +268,12 @@ public class HelloWorld
 		IntPtr mdata = IntPtr.Zero;
 		if (media != null) {
 			IntPtr comment = IntPtr.Zero;
-			int gota, gotv;
-			mdata = codec.decode_open_input(media, ref comment, out gota, out gotv);
+			int gota = 0, gotv;
+			mdata = codec.codec_alloc();
+			if (mdata != IntPtr.Zero)
+				if (codec.decode_open_input(mdata, media,
+						ref comment, out gota, out gotv) == 0)
+					gota = 0;
 			if (gota == 0)
 				codec.decode_close(mdata);
 			else if (mdata != IntPtr.Zero)
@@ -306,9 +350,11 @@ public class HelloWorld
 		// Open video file for decoding input
 		IntPtr cmtp = new IntPtr();
 		int gota, gotv;
-		IntPtr data = codec.decode_open_input(input, ref cmtp,
-				out gota, out gotv);
+		IntPtr data = codec.codec_alloc();
 		if (data == IntPtr.Zero)
+			return 1;
+		if (codec.decode_open_input(data, input, ref cmtp,
+				out gota, out gotv) == 0)
 			return 1;
 		if (gotv == 0) {
 			codec.decode_close(data);

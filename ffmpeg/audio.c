@@ -11,12 +11,15 @@ int main(int argc, char *argv[])
 	if (argc != 3)
 		return 1;
 	const char *input = argv[1], *output = argv[2];
-	init();
+	codec_init();
+
+	void *dp = codec_alloc();
+	if (!dp)
+		return 1;
 
 	// Open input file for decoding
 	int gota, gotv;
-	void *dp = decode_open_input(input, NULL, &gota, &gotv);
-	if (!dp)
+	if (!decode_open_input(dp, input, NULL, &gota, &gotv))
 		return 1;
 	if (!gota) {
 		av_log(NULL, AV_LOG_ERROR, "Audio stream not found\n");
@@ -25,9 +28,14 @@ int main(int argc, char *argv[])
 	// Get audio codec context
 	void *ac = decode_context(dp, 0);
 
-	// Open output file for encoding
-	void *ep = encode_open_output(output, NULL);
+	void *ep = codec_alloc();
 	if (!ep) {
+		decode_close(dp);
+		return 1;
+	}
+
+	// Open output file for encoding
+	if (!encode_open_output(ep, output, NULL)) {
 		decode_close(dp);
 		return 1;
 	}
@@ -62,11 +70,13 @@ int main(int argc, char *argv[])
 			aframe++;
 		}
 	}
+	fprintf(stderr, "%ld audio frames, %ld video frames\n", aframe, vframe);
 
 	// Clean up
 	encode_close(ep);
+	codec_free(ep);
 	decode_close(dp);
-	fprintf(stderr, "%ld audio frames, %ld video frames\n", aframe, vframe);
+	codec_free(dp);
 
 	return 0;
 }

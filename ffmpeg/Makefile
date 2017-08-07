@@ -12,7 +12,8 @@ CFLAGS		:= -Wall -std=c99 -U__STRICT_ANSI__ -I/usr/include/libxml2 \
 		  $(LIBCFLAGS)
 CXXFLAGS	:= -Wall -std=c++11 -I/usr/include/libxml2 \
 		  -Wno-deprecated-declarations
-LIBS	+= -lavformat -lavfilter -lavcodec -lavutil -lswscale -lxml2 -lm
+LIBS	+= -lavformat -lavfilter -lavcodec -lavutil -lswscale -lfmod -lxml2 -lm
+LIBS	+= -Wl,--rpath=/usr/local/lib
 
 CC	= $(CROSS)gcc
 CXX	= $(CROSS)g++
