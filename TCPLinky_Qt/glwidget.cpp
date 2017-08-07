@@ -102,9 +102,9 @@ void GLWidget::initializeGL()
 	data.loc.intensity = glGetAttribLocation(data.program, "intensity");
 	glGenBuffers(1, &data.bIntensity);
 	glBindBuffer(GL_ARRAY_BUFFER, data.bIntensity);
-	glBufferData(GL_ARRAY_BUFFER, 65536 * sizeof(GLuint), 0, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 65536 * sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
 	glEnableVertexAttribArray(data.loc.intensity);
-	glVertexAttribPointer(data.loc.intensity, 1, GL_UNSIGNED_INT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(data.loc.intensity, 1, GL_FLOAT, GL_FALSE, 0, 0);
 	glVertexAttribDivisor(data.loc.intensity, 1);
 
 	data.loc.projection = glGetUniformLocation(data.program, "projection");
@@ -136,7 +136,7 @@ void GLWidget::paintGL()
 	glBindVertexArray(data.vao);
 	if (_update) {
 		glBindBuffer(GL_ARRAY_BUFFER, data.bIntensity);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, _channels.size() * sizeof(GLuint), \
+		glBufferSubData(GL_ARRAY_BUFFER, 0, _channels.size() * sizeof(GLfloat), \
 			     _channels.constData());
 		_update = 0;
 		//qDebug() << _channels.size() << ceil(sqrt(_channels.size()));

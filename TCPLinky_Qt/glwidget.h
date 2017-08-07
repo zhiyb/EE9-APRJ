@@ -37,7 +37,7 @@ private:
 	uint16_t _chCount;
 	uint8_t _command, _stream;
 
-	QVector<GLuint> _channels;
+	QVector<GLfloat> _channels;
 	QAtomicInt _update;
 
 	struct data_t {
