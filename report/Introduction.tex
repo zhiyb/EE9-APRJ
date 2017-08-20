@@ -1,0 +1,14 @@
+\chapter{Introduction}
+\renewcommand{\baselinestretch}{\mystretch}
+\label{chap:Intro}
+%\setlength{\parindent}{0pt}
+
+\PARstart{V}{ixen} 3 \cite{vixen} is an open-source application for designing and controlling automation lighting displays. With modern technologies, computer-controlled displays are becoming increasingly popular as holiday decorations and other lighting show projects. Vixen is capable of supporting multiple display controllers with thousands of channels for complex lighting shows and effects. It can also synchronise the lighting sequence to audio playback.
+
+By being open-source, Vixen is primarily built towards lower cost Do-It-Yourself solutions. Together with the support of software plugins, users can create customised plugins to support a variety of display controllers, or improve the Vixen software framework itself.
+
+However, the current execution engine used by Vixen has significant computational overheads. Consequently, a powerful computer with sufficient memory space is required to render the lighting effects in real-time. This may not be possible in some situations, increasing the cost of display setup, and is very energy inefficient.
+
+In this project, a new engine was developed. Instead of having layers of overheads in the original execution engine, the new engine takes pre-rendered sequences exported at the display controller's layer. It was also implemented with simplicity and portability to be suitable for embedded platforms.
+
+The concept of pre-rendering and playback performs especially similar to wildly used video processing technologies. Therefore, support for video format was also implemented for exporting and playback using the new engine. This enables users to use commonly available video editing and transcoding software on lighting sequences. Well-established video compression algorithms also help reduce data file size, potentially take advantages of hardware multimedia acceleration features. By muxing audio stream and channel information into a single video file, management and sharing of sequences were also simplified.

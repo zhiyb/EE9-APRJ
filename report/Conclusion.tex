@@ -1,0 +1,26 @@
+\chapter{Conclusion}
+\renewcommand{\baselinestretch}{\mystretch}
+\label{chap:Conclusion}
+%\setlength{\parindent}{0pt}
+
+\cmt{Varies methods of analysing and optimising resource intensive application. Now possible on an embedded platform for greater flexibility and power efficiency.}
+
+\section{Limitations}
+
+\cmt{Lower performance than controller dedicated applications
+
+Video format not very useful for editing
+
+Increased user interface complexity}
+
+\section{Future works}
+
+\subsection{Implementation improvements}
+\hfill
+The integration between original execution engine and the new playback engine can be improved. Currently, the playback engine takes priority over the execution engine, which might cause unwanted behaviour under certain circumstances. Playback contexts may also be implemented to cache multiple playback sequences information. The engines should be switched off during idle to further reduce CPU usage.
+
+Support for preview display was not implemented for the playback engine, since the preview works in elements workspace whereas the playback engine works entirely in hardware controller workspace. It might be possible to extract mapping configurations during export, but support for preview is considered optional with lower priority.
+
+\subsection{Video channel mapping}
+\hfill
+\cmt{Map channels as preview layout? For easy preview and modification using existing software.}

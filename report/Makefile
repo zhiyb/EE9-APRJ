@@ -1,17 +1,20 @@
 SRC	:= $(shell egrep -l '^[^%]*\\begin\{document\}' *.tex)
 PDF	= $(SRC:%.tex=%.pdf)
 TRG	= $(SRC:%.tex=%.dvi)
+BIB	= $(wildcard *.bib)
 
 .PHONY: all
 all: $(PDF)
 
-report.pdf: definitions.tex
+%.pdf: %.tex %.bbl
+	pdflatex --shell-escape $<
+	pdflatex --shell-escape $<
 
-%.pdf: %.tex
-	pdflatex --shell-escape $<
-	-bibtex $(<:%.tex=%.aux)
-	pdflatex --shell-escape $<
-	pdflatex --shell-escape $<
+%.bbl: $(BIB)
+	pdflatex --shell-escape $(@:%.bbl=%.tex)
+	-bibtex $(@:%.bbl=%.aux)
+
+$(PDF): $(wildcard *.tex)
 
 .PHONY: clean
 clean:

@@ -1,0 +1,48 @@
+\chapter{Video data format}
+\renewcommand{\baselinestretch}{\mystretch}
+\label{chap:Video}
+%\setlength{\parindent}{0pt}
+
+\section{Similarity}
+
+\cmt{The whole process looks similar to animation designing, video rendering and playback}
+
+\section{Implementation}
+
+\cmt{Using ffmpeg for encoding and muxing in export, decoding and demuxing in playback}
+
+\cmt{Using fmod for audio rendering to selectable devices}
+
+\cmt{Using Interop for interfacing C/C++ DLLs to C\#. However, complex C/C++ data structure and processing require additional encapsulation in C/C++ \wn{17}
+
+C/C++ and C\# implementation of basic encoding / decoding for testing.
+
+Audio muxing and metadata for combining files. \wn{18}
+
+\texttt{Makefile} and \texttt{diff} for automatic building and testing. \wn{17}}
+
+\section{Benefits}
+
+\cmt{Uses video to combine sequence dump, audio and configuration information into a single file, with reduced size \wn{16}}
+
+\cmt{Easy sharing, editing software exists, sophisticated compress methods, hardware acceleration possible}
+
+\section{Limitations}
+
+\cmt{Small resolution for large number of channels, may not leverage full advantage of hardware video decoding}
+
+\cmt{Discrete rapid-changing unassociated continuous channels not suitable for common video encoding methods and pixel formats:
+
+Colour space, colour degrade, channel cross-talk}
+
+\section{Integration}
+
+\cmt{C\# interface, integrated directly to \texttt{Vixen.Sys} \wn{18}}
+
+\cmt{Using newer version of fmod\wn{19}}
+
+\cmt{Integrated to playback engine, switch based on file extension}
+
+\section{Performance}
+
+\cmt{Varies encoding, formats, quality factor... Insert data table \wn{16}}

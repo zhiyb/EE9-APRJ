@@ -1,0 +1,182 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This is root file of the thesis. %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\documentclass[11pt,a4paper,oneside]{thesis}
+\documentclass[11pt,a4paper,]{thesis}
+\usepackage{amssymb}
+\usepackage{amsbsy}
+\usepackage{amsmath}
+\usepackage{amsthm} % This is only for theorem and proofs.
+\usepackage{setspace}
+\usepackage{ifpdf}
+\ifpdf
+\usepackage[pdftex]{graphicx}
+\else
+\usepackage{graphicx}
+\fi
+\usepackage{cite}
+
+\usepackage[pdfpagemode={UseOutlines},bookmarks=true,bookmarksopen=true,
+bookmarksopenlevel=0,bookmarksnumbered=true,hypertexnames=false,
+colorlinks,linkcolor={blue},citecolor={blue},urlcolor={blue},
+pdfstartview={FitV},unicode,breaklinks=true]{hyperref}
+
+\title{Lightening the Load: A New Playback Engine for Sophisticated Animated Lighting Displays}
+\author{\href{yz4116@imperial.ac.uk}{Yubo~Zhi}\\
+Project supervisor: \href{james.davis06@imperial.ac.uk}{Dr~James~J.~Davis}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% including page setting & fancyhdr.
+\setlength{\textwidth}{500pt}
+\addtolength{\hoffset}{-20pt}
+\setlength{\textheight}{650pt}
+\setlength{\headsep}{30pt}
+
+% Set left margin - The default is 1 inch.
+\setlength{\oddsidemargin}{2cm}
+
+% Set width of the text - What is left will be the right margin.
+\setlength{\textwidth}{15cm} %5.7in
+
+% Set top margin - The default is 1 inch
+\setlength{\topmargin}{-1.5cm}
+
+% Set height of the header
+\setlength{\headheight}{1.2cm}
+
+% Set vertical distance between the header and the text
+\setlength{\headsep}{1.2cm}
+
+% Set height of the text
+\setlength{\textheight}{23cm} %9in
+
+% Set vertical distance between the text and the
+% bottom of footer
+\setlength{\footskip}{0.4cm}
+
+% set belowcaptionskip.
+\addtolength{\belowcaptionskip}{2ex}
+
+%\setlength{\parindent}{2em}
+\setlength{\parindent}{0pt}
+%%%%%%%%%%%%%%%%%%%%%
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+
+\renewcommand{\chaptermark}[1]{\markright{\thechapter.\ #1}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\fancyhf{}
+\fancyhead[LE,RO]{\bfseries\thepage}
+\fancyhead[LO]{\bfseries\rightmark}
+\fancyhead[RE]{\bfseries\leftmark}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+\addtolength{\headheight}{0.5pt}
+\fancypagestyle{plain}{
+  \fancyhead[LE,RO]{\bfseries\thepage}
+  \fancyhead[LO]{}
+  \fancyhead[RE]{}
+  \renewcommand{\headrulewidth}{0.5pt}
+}
+
+\def\mystretch{1.5}
+
+\newlength{\figX}
+\newlength{\figY}
+\newlength{\tmplen}
+
+\newlength{\matFigX}
+\newlength{\matFigY}
+
+\setlength{\matFigX}{4.04in} \setlength{\matFigY}{3.04in}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex}
+%\setlength{\parindent}{3em}
+\sloppy
+
+\hyphenation{another}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[caption=false,font=footnotesize]{subfig}
+\usepackage[pdftex,dvipsnames]{xcolor}
+\usepackage{listings,xargs,epsfig,enumitem}
+\usepackage[colorinlistoftodos,prependcaption,textsize=small]{todonotes}
+
+\graphicspath{{Figs/}}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\newcommand{\fsize}{\small}
+%\newcommand{\fsize}{\tiny}
+\newcommand{\tabsize}{4}
+
+\lstset{frame=tb,
+  language=C++,
+  %  aboveskip=0mm,
+  belowskip=0mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\fsize\ttfamily},
+  numberstyle=\fsize\color{gray},
+  %  numbers=left,
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=\tabsize
+}
+
+\input{definitions.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The Beginning of a LaTeX document
+\begin{document}
+
+\input{TitlePage.tex}
+
+%%%%%%%%%%%%%
+\frontmatter
+\doublespace
+\setlength{\tmplen}{\parskip}
+\setlength{\parskip}{-1ex}
+\input{Abstract.tex}
+\input{ChapAckn.tex}
+\tableofcontents
+\listoffigures
+\listoftables
+\renewcommand{\baselinestretch}{\mystretch}
+\input{ChapAbbr.tex}
+\setlength{\parskip}{\tmplen}
+
+%%%%%%%%%%%%
+\mainmatter
+\fancyhead[RE]{\emph{Chapter \thechapter}}
+\renewcommand{\baselinestretch}{\mystretch}
+% Use \input to include your chapters as illustrated below
+\input{Introduction.tex}
+\input{Background.tex}
+\input{Evaluation.tex}
+\input{Controller.tex}
+\input{Playback.tex}
+\input{Console.tex}
+\input{Video.tex}
+\input{Guide.tex}
+\input{Conclusion.tex}
+
+\input{RefList.tex}
+\fancyhead[RE]{\emph{References}}
+
+\appendix
+\input{AppA.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The end of a LaTeX document
+\end{document}
+
+%%%%%%%%%%The END%%%%%%%%%%%%%%%%%%%%

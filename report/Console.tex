@@ -1,0 +1,34 @@
+\chapter{Console application}
+\renewcommand{\baselinestretch}{\mystretch}
+\label{chap:Console}
+%\setlength{\parindent}{0pt}
+
+\cmt{Implemented CUI version of Vixen. \wn{13}}
+
+\section{Implementation}
+
+\cmt{Uses original codebase (\texttt{Vixen.dll}), but only minimal initialisation and no GUI.
+
+Loads modules from DLLs, especially controllers support.
+
+Configuration modification? Modify XML directly, or program interfaces.}
+
+\section{Loading performance}
+
+\cmt{DLL module loading times...}
+
+\cmt{Configuration file sizes... Tidy implemented}
+
+\cmt{Profilers... \wn{14}}
+
+\section{Execution performance}
+
+\cmt{Slower than controller specific, analysis}
+
+\cmt{Profilers...}
+
+\section{Platform performance benchmark}
+
+\cmt{Now possible with complete implementation on Linux}
+
+\cmt{Unlimited playback and / or controller update speed for IO / processing comparison. \wn{15}}
