@@ -809,6 +809,9 @@ FMOD_RESULT F_CALLBACK pcmreadcallback(FMOD_SOUND *sound, void *data, unsigned i
 		av_log(NULL, AV_LOG_WARNING, "FMOD RDCB: Requested: %u, available: %u\n", datalen, size);
 		return FMOD_ERR_NOTREADY;
 	}
+	// Check whether drop frame for synchronisation
+	if (size >= datalen * 4u)
+		buf->rp += datalen;
 	memcpy(data, buf->rp, datalen);
 	buf->rp += datalen;
 	pthread_mutex_unlock(&buf->mut);
@@ -907,9 +910,10 @@ void fmod_queue_frame(data_t *data, AVFrame *frame)
 {
 #ifdef ENABLE_FMOD
 	audio_buf_t *buf = &data->buf;
-	pthread_mutex_lock(&buf->mut);
 	int channels = av_get_channel_layout_nb_channels(frame->channel_layout);
 	size_t size = frame->nb_samples * channels * sizeof(short);
+	// Lock frame cache
+	pthread_mutex_lock(&buf->mut);
 	// Clear used buffer space
 	if (buf->rp != buf->data) {
 		buf->size -= buf->rp - buf->data;
