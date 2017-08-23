@@ -5,14 +5,17 @@ LIB	= libcodec.so
 EXE	= codec.exe
 MONO	= MONO_IOMAP=all mono
 
+#FMOD_FLAGS	= -DENABLE_FMOD
+#FMOD_LIBS	= -lfmod
+
 #CROSS	= mipsel-linux-
 OPTIMIZE	:= -g -O3
 CFLAGS		:= -Wall -std=c99 -U__STRICT_ANSI__ -I/usr/include/libxml2 \
 		  -Wno-deprecated-declarations -Wno-unused-variable -Wno-unused-function \
-		  $(LIBCFLAGS)
+		  $(LIBCFLAGS) $(FMOD_FLAGS)
 CXXFLAGS	:= -Wall -std=c++11 -I/usr/include/libxml2 \
-		  -Wno-deprecated-declarations
-LIBS	+= -lavformat -lavfilter -lavcodec -lavutil -lswscale -lfmod -lxml2 -lm
+		  -Wno-deprecated-declarations $(FMOD_FLAGS)
+LIBS	+= -lavformat -lavfilter -lavcodec -lavutil -lswscale $(FMOD_LIBS) -lxml2 -lm
 LIBS	+= -Wl,--rpath=/usr/local/lib
 
 CC	= $(CROSS)gcc

@@ -10,10 +10,18 @@ DynamicLibrary {
     ]
     cpp.dynamicLibraries: [
         "avformat", "avfilter", "avcodec", "avutil", "swscale",
-        "fmod", "pthread", "m",
+        "pthread", "m",
     ]
     cpp.libraryPaths: ["/usr/local/lib"]
     cpp.rpaths: cpp.libraryPaths
+
+    property bool enableFMOD: false
+
+    Properties {
+        condition: enableFMOD
+        cpp.dynamicLibraries: outer.concat(["fmod"]);
+        cpp.defines: outer.concat(["ENABLE_FMOD"]);
+    }
 
     Export {
         Depends {name: "cpp"}

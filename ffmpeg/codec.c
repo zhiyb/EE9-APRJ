@@ -17,7 +17,9 @@
 #include <libavutil/samplefmt.h>
 #include <libswscale/swscale.h>
 
+#ifdef ENABLE_FMOD
 #include <fmod.h>
+#endif
 
 /* {{{ Structure and basics */
 typedef struct {
@@ -40,10 +42,12 @@ typedef struct data_t {
 	} audio, video;
 
 	// FMOD related
+#ifdef ENABLE_FMOD
 	FMOD_SYSTEM *system;
 	FMOD_SOUND *sound;
 	FMOD_CHANNEL *channel;
 	audio_buf_t buf;
+#endif
 } data_t;
 
 void codec_init()
@@ -751,6 +755,7 @@ void decode_close(data_t *data)
 /* {{{ FMOD */
 unsigned int fmod_init(data_t *data)
 {
+#ifdef ENABLE_FMOD
 	unsigned int result;
 	FMOD_SYSTEM *system;
 	result = FMOD_System_Create(&system);
@@ -766,10 +771,14 @@ unsigned int fmod_init(data_t *data)
 	}
 	data->system = system;
 	return FMOD_OK;
+#else
+	return 0;
+#endif
 }
 
 unsigned int fmod_version(data_t *data)
 {
+#ifdef ENABLE_FMOD
 	unsigned int version;
 	unsigned int result = FMOD_System_GetVersion(data->system, &version);
 	if (result != FMOD_OK) {
@@ -777,8 +786,12 @@ unsigned int fmod_version(data_t *data)
 		return 0;
 	}
 	return version;
+#else
+	return 0;
+#endif
 }
 
+#ifdef ENABLE_FMOD
 FMOD_RESULT F_CALLBACK pcmreadcallback(FMOD_SOUND *sound, void *data, unsigned int datalen)
 {
 	audio_buf_t *buf;
@@ -806,9 +819,11 @@ FMOD_RESULT F_CALLBACK pcmsetposcallback(FMOD_SOUND *sound, int subsound,
 	// This is useful if the user calls Channel::setPosition and you want to seek your data accordingly.
 	return FMOD_OK;
 }
+#endif
 
 unsigned int fmod_create_stream(data_t *data, data_t *dec)
 {
+#ifdef ENABLE_FMOD
 	if (dec->audio.stream < 0) {
 		av_log(NULL, AV_LOG_WARNING, "Audio stream not found\n");
 		return FMOD_ERR_FILE_BAD;
@@ -851,18 +866,26 @@ unsigned int fmod_create_stream(data_t *data, data_t *dec)
 	data->sound = sound;
 	data->channel = channel;
 	return FMOD_OK;
+#else
+	return 0;
+#endif
 }
 
 unsigned int fmod_play(data_t *data)
 {
+#ifdef ENABLE_FMOD
 	unsigned int result = FMOD_Channel_SetPaused(data->channel, 0);
 	if (result != FMOD_OK)
 		av_log(NULL, AV_LOG_ERROR, "FMOD unpause failed: %u\n", result);
 	return result;
+#else
+	return 0;
+#endif
 }
 
 void fmod_close(data_t *data)
 {
+#ifdef ENABLE_FMOD
 	unsigned int result;
 	if (data->sound)
 		if ((result = FMOD_Sound_Release(data->sound)) != FMOD_OK)
@@ -875,10 +898,12 @@ void fmod_close(data_t *data)
 	}
 	if (data->buf.data)
 		free(data->buf.data);
+#endif
 }
 
 void fmod_queue_frame(data_t *data, AVFrame *frame)
 {
+#ifdef ENABLE_FMOD
 	audio_buf_t *buf = &data->buf;
 	pthread_mutex_lock(&buf->mut);
 	size_t size = frame->nb_samples * frame->channels * sizeof(short);
@@ -904,19 +929,28 @@ void fmod_queue_frame(data_t *data, AVFrame *frame)
 		size -= 4;
 	}
 	pthread_mutex_unlock(&buf->mut);
+#endif
 }
 
 unsigned int fmod_update(data_t *data)
 {
+#ifdef ENABLE_FMOD
 	return FMOD_System_Update(data->system);
+#else
+	return 0;
+#endif
 }
 
 int fmod_is_playing(data_t *data)
 {
+#ifdef ENABLE_FMOD
 	FMOD_OPENSTATE state;
 	unsigned int result = FMOD_Sound_GetOpenState(data->sound, &state, 0, 0, 0);
 	if (result != FMOD_OK)
 		return 0;
 	return state == FMOD_OPENSTATE_PLAYING;
+#else
+	return 0;
+#endif
 }
 /* }}} */
