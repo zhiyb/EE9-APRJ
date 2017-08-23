@@ -5,7 +5,7 @@
 
 \section{Vixen overview}
 
-\PARstart{T}{he} Vixen application was based on Microsoft Windows .NET runtime \cite{dotnet}, developed using Microsoft Visual Studio \cite{msvs}. \fref{fig:vixen-main} shows the main application interface.
+\PARstart{T}{he} Vixen application was based on Microsoft Windows .NET runtime \cite{dotnet}, developed using Microsoft Visual Studio \cite{msvs}. It is capable of loading modules as dynamic-link libraries (DLL) during runtime. Most of its components such as controllers, lighting effects and editor were implemented as separate modules. \fref{fig:vixen-main} shows the main application interface.
 
 \begin{figure}[!t]
   \centering
@@ -78,8 +78,9 @@ The hardware specifications are listed below:
 \end{description}
 
 \subsection{Linux based systems}
+\label{sec:systems}
 
-Multiple Linux based systems with a variety of computation resource configurations, including both desktop and embedded platforms, were used for performance testing, as listed in \tref{tbl:linux}.
+Multiple Linux based systems with a variety of resource configurations, ranging from high performance desktop platforms to low-end embedded platforms, were used for performance testing, as listed in \tref{tbl:linux}.
 
 \begin{table}[!h]
   \centering
@@ -87,11 +88,12 @@ Multiple Linux based systems with a variety of computation resource configuratio
     \hline
     \textbf{Name} & \textbf{Architecture} & \textbf{CPU} & \textbf{Specification} & \textbf{RAM} \\
     \hline
-    NAS         & x86\_64 & AMD FX-8350 & 8 cores @ 4.0GHz       & 16GiB \\ \hline
-    Jetson TX2  & aarch64 & NVIDIA Tegra X2 & 6 cores @ 2.0GHz   & 8GiB  \\ \hline
-    RPi 3B      & armv7l  & Broadcom BCM2837 & 4 cores @ 1.2GHz  & 1GiB  \\ \hline
-    RPi Zero W  & armv6l  & Broadcom & 1 core @ 1.0GHz           & 512MiB  \\ \hline
-    RPi B+      & armv6l  & Broadcom BCM2835 & 1 core @ 900MHz   & 512MiB  \\ \hline
+    NAS         & x86\_64 & AMD FX-8350       & 8 cores @ 4.0GHz  & 16GiB   \\ \hline
+    Jetson TX2  & aarch64 & NVIDIA Tegra X2   & 6 cores @ 2.0GHz  & 8GiB    \\ \hline
+    RPi 3B      & armv7l  & Broadcom BCM2837  & 4 cores @ 1.2GHz  & 1GiB    \\ \hline
+    RPi Zero W  & armv6l  & Broadcom          & 1 core @ 1.0GHz   & 512MiB  \\ \hline
+    RPi B+      & armv6l  & Broadcom BCM2835  & 1 core @ 900MHz   & 512MiB  \\ \hline
+    Noah NP1380 & mipsel  & Ingenic JZ4740    & 1 core @ 336MHz   & 64MiB   \\ \hline
   \end{tabular}
   \caption{Linux based systems}
   \label{tbl:linux}

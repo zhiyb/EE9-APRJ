@@ -13,6 +13,8 @@ There are 2 possible solutions to the problem. The system locale can be changed,
 
 The original Vixen application already has an built-in instrumentation display interface that can show runtime performance figures such as controller update speeds. However, it lacks some elemental functionalities for performance analysis. Data logging, playback timestamps and CPU usage logging were added for performance analysis.
 
+The Vixen application uses a separate thread for each task. It has the main GUI thread for editor, a preview rendering thread and multiple dedicated threads for active controllers. This multi-threading structure can take advantage of modern multi-core multi-thread processors. However, performance on a single core machine can be poor due to context switching. Mutex locks are also required to resolve potential data access conflict, further increases the overhead.
+
 \fref{fig:original} shows the performance of the original Vixen execution engine. The CPU usage frequently reaches above $90 \%$, while the refresh rate being very unstable around the configured 20 fps. Especially at the first 60 seconds, the refresh rate drops to 5 fps while trying to keep up with element updates. At the same time, the CPU usage was about $50 \%$. On a dual-core machine, this implies one of the cores was running at full load while the other one was mostly idle. \wn{2}
 
 \begin{figure}[t]
@@ -68,10 +70,11 @@ Two steps are needed for this approach. Firstly, pre-render the sequence with pr
 To pre-render the sequence, two different methods are possible. A dummy controller can be used for runtime data dumping, or use a separate export engine with manual frame control independent of wall-clock time.
 
 \section{Custom controller}
+\label{sec:tcplinky}
 
-A custom controller module (\texttt{TCPLinky}) was developed based on one of its existing controllers. This controller uses TCP connection to transfer display channel data, supports up to 65535 channels. A corresponding cross-platform server application that simulates a multi-channel display was also developed using C++ with Qt \cite{qt} and OpenGL \cite{shreiner2009opengl} rendering. This server application allows real-time debugging of display output without the need of a complex physical lighting system setup. Data dumping, performance and statistical analysis can also be easily achieved. \wn{4}
+A custom controller module (\texttt{TCPLinky}) was developed based on one of its existing controller (\texttt{BlinkyLinky}). This controller uses TCP connection to transfer display channel data, supports up to 65535 channels. A corresponding cross-platform server application that simulates a multi-channel display was also developed using C++ with Qt \cite{qt} and OpenGL \cite{shreiner2009opengl} rendering. This server application allows real-time debugging of display output without the need of a complex physical lighting system setup. Data dumping, performance and statistical analysis can also be easily achieved. \wn{4}
 
-\fref{fig:tcplinky_server} shows a screenshot of the server application. It consumes less than $3 \%$ of CPU time under 50 fps refresh rate, which is negligible. It can also be compiled and executed on other computers, simulates real world network connection scenarios.
+\fref{fig:tcplinky_server} shows a screenshot of the server application. With the help of GPU rendering through OpenGL, it consumes less than $3 \%$ of CPU time under 50 fps refresh rate, which is negligible. It can also be compiled and executed on other computers, simulates real world network connected controller scenarios.
 
 \begin{figure}[t]
   \centering
