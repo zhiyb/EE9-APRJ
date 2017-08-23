@@ -15,7 +15,7 @@ CFLAGS		:= -Wall -std=c99 -U__STRICT_ANSI__ -I/usr/include/libxml2 \
 		  $(LIBCFLAGS) $(FMOD_FLAGS)
 CXXFLAGS	:= -Wall -std=c++11 -I/usr/include/libxml2 \
 		  -Wno-deprecated-declarations $(FMOD_FLAGS)
-LIBS	+= -lavformat -lavfilter -lavcodec -lavutil -lswscale $(FMOD_LIBS) -lxml2 -lm
+LIBS	+= -L/usr/local/lib -lavformat -lavfilter -lavcodec -lavutil -lswscale $(FMOD_LIBS) -lxml2 -lm
 LIBS	+= -Wl,--rpath=/usr/local/lib
 
 CC	= $(CROSS)gcc
