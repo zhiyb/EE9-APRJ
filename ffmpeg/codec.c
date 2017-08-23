@@ -16,6 +16,7 @@
 #include <libavutil/mathematics.h>
 #include <libavutil/samplefmt.h>
 #include <libswscale/swscale.h>
+#include "mux.c"
 
 #ifdef ENABLE_FMOD
 #include <fmod.h>
@@ -282,7 +283,8 @@ int encode_add_video_stream(data_t *data, AVCodec *vcodec,
 	vc->height = (unsigned int)round(sqrt(ch)) & ~1u;
 	vc->width = (ch + vc->height - 1u) / vc->height;
 	vc->width = (vc->width + 1u) & ~1u;
-	out_stream->time_base = vc->time_base = av_make_q(resolution, 1000);
+	//out_stream->time_base = vc->time_base = av_make_q(resolution, 1000);
+	out_stream->time_base = vc->time_base = (AVRational){resolution, 1000};
 	if (pix_fmt_name != 0)
 		vc->pix_fmt = av_get_pix_fmt(pix_fmt_name);
 	if (vcodec->id == AV_CODEC_ID_H264)
@@ -906,7 +908,8 @@ void fmod_queue_frame(data_t *data, AVFrame *frame)
 #ifdef ENABLE_FMOD
 	audio_buf_t *buf = &data->buf;
 	pthread_mutex_lock(&buf->mut);
-	size_t size = frame->nb_samples * frame->channels * sizeof(short);
+	int channels = av_get_channel_layout_nb_channels(frame->channel_layout);
+	size_t size = frame->nb_samples * channels * sizeof(short);
 	// Clear used buffer space
 	if (buf->rp != buf->data) {
 		buf->size -= buf->rp - buf->data;
