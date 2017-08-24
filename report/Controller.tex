@@ -10,14 +10,14 @@ To setup a reference baseline for optimal performance, sequence rendering applic
 A GUI application dedicated to the \texttt{TCPLinky} was developed using C++ as an optional user-friendly alternative implementation showcase. This application was developed specific to the Noah NP1380 platform listed in \sref{sec:systems}. This device is a handheld embedded device based on a 10 years old SoC chip, originally designed for educational use. \fref{fig:noah_main} shows the main interface of this device. Fortunately, this devices uses Linux system and Qt2 as GUI. Therefore, it is possible to test Vixen application on this low-end platform.
 
 \begin{figure*}[t]
-	\centering
-	\subfloat[Main GUI]{\includegraphics[width=0.45\textwidth]{Figs/noah.png}%
-	\label{fig:noah_main}}
-	\hfil
-	\subfloat[Controller application]{\includegraphics[width=0.45\textwidth]{Figs/vixen_noah.png}%
-	\label{fig:vixen_noah}}
-	\caption{Screenshot of Noah NP1380 device}
-	\label{fig:noah}
+  \centering
+  \subfloat[Main GUI]{\includegraphics[width=0.45\textwidth]{Figs/noah.png}%
+  \label{fig:noah_main}}
+  \hfil
+  \subfloat[Controller application]{\includegraphics[width=0.45\textwidth]{Figs/vixen_noah.png}%
+  \label{fig:vixen_noah}}
+  \caption{Screenshot of Noah NP1380 device}
+  \label{fig:noah}
 \end{figure*}
 
 \fref{fig:vixen_noah} shows a screenshot of the dedicated application. The method of performance profiling through statistic files in proc file system was also tested. These smaller progress bars at the lower half of the application shows percentages of CPU time spent on different tasks, such as user space applications, kernel mode and interrupt handling. Most of the time only less than $50 \%$ CPU time was used for this controller application, indicates even this low-end device is capable of handling thousands of lighting channels.
@@ -28,4 +28,11 @@ Another minimal implementation was developed using C\#, named \texttt{VixenLinky
 
 The overall performance of optimised Vixen may be limited by two different factors, sequence loading performance and controller update speed. Therefore, options to unlimit the update interval of both sequence loading and controller update were added separately.
 
-\fref{vixenlinky_rpi} shows an example of performance data gathered on the Raspberry Pi B+ platform through this program using one of real-world lighting sequences. The CPU usage peaks at $??$, while most of the time distributed around $??$ and $??$ (lower and upper quartiles).
+\fref{fig:vixenlinky_noah} shows an example of performance data gathered on the Noah NP1380 platform through \texttt{VixenLinky} using one of real-world lighting sequences. The refresh rates of both playback and controller are very stable around 50 fps. The CPU usage peaks at $60.0 \%$ while most of the time distributed around $20.0 \%$ and $30.0 \%$ (first and third quartiles).
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=0.8\columnwidth]{Figs/vixenlinky_noah.eps}
+  \caption{Performance of \texttt{VixenLinky} on Noah NP1380}
+  \label{fig:vixenlinky_noah}
+\end{figure}

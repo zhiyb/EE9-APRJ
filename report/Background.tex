@@ -56,6 +56,8 @@ Vixen also has a preview display. It maps element outputs to sets of points on a
   \label{fig:vixen-preview}
 \end{figure}
 
+The Vixen application also features a show scheduler to automatically start a predefined sequence at specific time. Before the shows can be started, the scheduler need to pre-process all scheduled items first. Sequences use the original execution engine need a pre-rendering process, which can take a significant amount of time. 
+
 \section{Similar applications}
 
 \cmt{Further background researches may need to be done, such as analysing other lighting control applications' performances and their implementations.}
@@ -181,3 +183,5 @@ In addition to profilers provided by the platform, performance profiling was als
 The original profiler with Vixen uses the \texttt{Process} class provided by Microsoft Windows runtime for CPU usage measurements. However, it was not completely available under mono runtime. A different profiling method would be required for Linux.
 
 On Linux, there are statistic files in the proc file system \cite{proc} provided by the kernel. Per-process information about CPU jiffies, disk I/O statistics are available by reading corresponding files.
+
+\cmt{More information about the proc file system?}

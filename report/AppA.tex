@@ -1,12 +1,68 @@
 \renewcommand{\baselinestretch}{1.5}
-\chapter{Appendix Title}
-\label{App:Poly}
+\chapter{Makefile for automated tests}
+\label{App:tests}
 
-\newtheorem{Theorem}{Theorem}
+\begin{lstfloat}
+\begin{lstlisting}[language=make,label=lst:makefile,captionpos=b,caption={Makefile used for automated performance tests}]
+SEQ	= ~/Vixen/luf2016_the-ark_20ms_Network.xml
+VA	= ~/Vixen/2016.rgb24.audio.test_enc.mp4
+V	= ~/Vixen/2016.rgb24.test_enc.mp4
+VYUV	= ~/Vixen/2016.yuv444p.test_enc.mp4
+V420	= ~/Vixen/2016.yuv420p.test_enc.mp4
 
-\begin{Theorem}
-It is sometimes desirable to place material in an appendix such as this. If you don't have any such material, then the appendix is of course optional. Many people manage without one.
-\end{Theorem}
-\begin{proof}
-This is the proof.
-\end{proof}
+CONSOLE	= MONO_IOMAP=all mono VixenConsole.exe
+PERF	= 500
+PERF_PB	= 100
+
+.PHONY: all
+all: raw seq va v vyuv v420
+
+.PHONY: seq va v vyuv v420
+seq: seq-normal seq-playback seq-controller
+va: va-normal va-playback va-controller
+v: v-normal v-playback v-controller
+vyuv: vyuv-normal vyuv-playback vyuv-controller
+v420: v420-normal v420-playback v420-controller
+
+seq-normal seq-playback seq-controller: $(SEQ)
+va-normal va-playback va-controller: $(VA)
+v-normal v-playback v-controller: $(V)
+vyuv-normal vyuv-playback vyuv-controller: $(VYUV)
+v420-normal v420-playback v420-controller: $(V420)
+
+%-normal:
+	mkdir -p prof; $(CONSOLE) -p $(PERF) start $<; mv prof $@
+%-playback:
+	mkdir -p prof; $(CONSOLE) -p $(PERF_PB) -u playback start $<; mv prof $@
+%-controller:
+	mkdir -p prof; $(CONSOLE) -p $(PERF) -u controller start $<; mv prof $@
+\end{lstlisting}
+\end{lstfloat}
+
+\iffalse
+\lref{lst:makefile} shows one Makefile used for video transcoding and PSNR testing.
+
+\begin{lstlisting}[float,floatplacement=ht,language=XML,label=lst:makefile,captionpos=b,caption={Makefile used for automated video transcoding}]
+INPUT	?= $(wildcard *raw.mp4)
+AUDIO	?= $(wildcard *audio.mp3)
+OUTPUT	:= yuv444p-0.mp4 yuv444p-6.mp4 yuv444p-12.mp4 yuv420p-0.mp4
+OUTPUT	+= rgb24-0.mp4 rgb24-6.mp4 rgb24-12.mp4 rgb24-24.mp4 rgb24-0-audio.mp4
+ROOT	:= $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
+
+all: $(OUTPUT)
+psnr: $(OUTPUT:%=psnr-%)
+
+.SECONDARY:
+.DELETE_ON_ERROR:
+yuv420p-%.mp4: $(INPUT)
+	ffmpeg -i "$<" -crf $* -codec:v libx264 -pix_fmt yuv420p -y "$@"
+yuv444p-%.mp4: $(INPUT)
+	ffmpeg -i "$<" -crf $* -codec:v libx264 -pix_fmt yuv444p -y "$@"
+rgb24-%.mp4: $(INPUT)
+	ffmpeg -i "$<" -crf $* -codec:v libx264rgb -pix_fmt rgb24 -y "$@"
+rgb24-%-audio.mp4: $(INPUT) $(AUDIO)
+	ffmpeg -i "$(INPUT)" -i $(AUDIO) -c:v copy -c:a copy "$@"
+psnr-%: $(ROOT)psnr.sh % $(INPUT)
+	$^ 2>&1 | tail -n 1
+\end{lstlisting}
+\fi

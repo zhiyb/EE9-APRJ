@@ -89,7 +89,7 @@ Although the custom controller module is capable of dumping outputs, it can not 
 
 The export function was originally used to convert the lighting sequence to formats recognisable by other controller specific applications. It renders the sequence using a manual timing source stepped after each frame, gives accurate constant data dump intervals. It can also write all controller channel mapping information to a separate XML file. An example XML file is shown by \lref{lst:network_xml}.
 
-\begin{lstlisting}[float,floatplacement=t,language=XML,label=lst:network_xml,captionpos=b,caption={Example controller mapping XML file}]
+\begin{lstlisting}[float,floatplacement=ht,language=XML,label=lst:network_xml,captionpos=b,caption={Example controller mapping XML file}]
 <?xml version="1.0" encoding="utf-8"?>
 <Vixen3_Export>
   <Resolution>20</Resolution>
@@ -115,7 +115,7 @@ The export function was originally used to convert the lighting sequence to form
 </Vixen3_Export>
 \end{lstlisting}
 
-To support the purposed optimised playback engine, audio media file path was added to the XML. The export dialog window was modified to allow custom frame resolution through text input, instead of a few pre-defined fixed values on the drop down list, as shown by \fref{fig:vixen_export}. Additional data format entries such as the ``Raw File"" for the playback engine was also added to the export wizard. \wn{5}
+To support the purposed optimised playback engine, audio media file path was added to the XML. The export dialog window was modified to allow custom frame resolution through text input, instead of a few pre-defined fixed values on the drop down list, as shown by \fref{fig:vixen_export}. Additional data format entries such as the ``Raw File"" for the playback engine was also added to the export wizard. This ``Raw'' format is a simple sequential concatenation of frames, where each frame compose of a 6-byte header, 2-byte channel count and followed by continuous channel data.
 
 \begin{figure}[t]
   \centering
@@ -129,3 +129,9 @@ To support the purposed optimised playback engine, audio media file path was add
 All source code related to Vixen and other programs developed in this project were managed using git version control tool \cite{git}, hosted on GitHub \cite{github} \cite{github_vixen_yz} \cite{github_project}.
 
 Using a version control system enables history changes tracking for source code. Together with a web-based hosting service like GitHub, changes to the source code can be easily backup and synchronised on multiple devices and the cloud. The source code for official Vixen application was also hosted on GitHub \cite{github_vixen}. With GitHub's signature fork and pull request functionality, straightforward cooperation between different organisations and people can be achieved. The modifications made in this project can be therefore easily incorporated into the official Vixen application source code repository for public use.
+
+\section{Process management}
+
+Makefiles \cite{make} were used throughout the project for automated processing and testing. Varies text and data processing tools such as grep \cite{grep}, sed \cite{sed} and R \cite{r_project} were also used with Makefiles for automated data collection and reshaping.
+
+\lref{lst:makefile} shows one example Makefile used for automated performance tests. Using this Makefile, following inputs will be tested sequentially with the optimised Vixen console application: raw sequence dump, \texttt{rgb24} encoded video with audio, \texttt{rgb24} video without audio, \texttt{yuv444p} encoded video without audio and \texttt{yuv420} encoded video without audio.
