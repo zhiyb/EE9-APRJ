@@ -1,0 +1,49 @@
+# Makefile for automated performance tests of VixenLinky and VixenConsole
+
+RAW	= ~/Vixen/luf2016_the-ark_20ms.raw
+SEQ	= ~/Vixen/luf2016_the-ark_20ms_Network.xml
+VA	= ~/Vixen/2016.rgb24.audio.test_enc.mp4
+V	= ~/Vixen/2016.rgb24.test_enc.mp4
+VYUV	= ~/Vixen/2016.yuv444p.test_enc.mp4
+V420	= ~/Vixen/2016.yuv420p.test_enc.mp4
+
+PERF	= 500
+PERF_PB	= 100
+
+HOST	= 192.168.1.72 12345
+CHS	= 8669 8600
+
+LINKY	= mono VixenLinky.exe
+CONSOLE	= MONO_IOMAP=all mono VixenConsole.exe
+
+.PHONY: all
+all: raw seq va v vyuv v420
+
+.PHONY: raw seq va v vyuv v420
+raw: raw-normal raw-playback raw-controller
+seq: seq-normal seq-playback seq-controller
+va: va-normal va-playback va-controller
+v: v-normal v-playback v-controller
+vyuv: vyuv-normal vyuv-playback vyuv-controller
+v420: v420-normal v420-playback v420-controller
+
+raw-normal raw-playback raw-controller: $(RAW)
+seq-normal seq-playback seq-controller: $(SEQ)
+va-normal va-playback va-controller: $(VA)
+v-normal v-playback v-controller: $(V)
+vyuv-normal vyuv-playback vyuv-controller: $(VYUV)
+v420-normal v420-playback v420-controller: $(V420)
+
+raw-normal:
+	mkdir -p prof; $(LINKY) $< 20 $(HOST) 20 $(CHS) $(PERF); mv prof $@
+raw-playback:
+	mkdir -p prof; $(LINKY) $< 0 $(HOST) 200 $(CHS) $(PERF_PB); mv prof $@
+raw-controller:
+	mkdir -p prof; $(LINKY) $< 20 $(HOST) 0 $(CHS) $(PERF); mv prof $@
+
+%-normal:
+	mkdir -p prof; $(CONSOLE) -p $(PERF) start $<; mv prof $@
+%-playback:
+	mkdir -p prof; $(CONSOLE) -p $(PERF_PB) -u playback start $<; mv prof $@
+%-controller:
+	mkdir -p prof; $(CONSOLE) -p $(PERF) -u controller start $<; mv prof $@
