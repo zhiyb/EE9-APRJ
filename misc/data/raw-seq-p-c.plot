@@ -37,14 +37,14 @@ set label "VixenConsole controller unlimited" at character x, y left rotate
 plot \
 	raw_p using ($0 - boxoff):11:10:15:14 lc 1 title " " with candlesticks whiskerbars, \
 	'' using ($0 - boxoff):12:12:12:12 lc 1 lt -1 notitle with candlesticks, \
-	'' using ($0 - boxoff):13 lc 1 pt 2 notitle with linespoints, \
+	'' using ($0 - boxoff):13 lc 1 pt 2 notitle with points, \
 	raw_c using ($0 + boxoff):17:16:21:20 lc 2 title " " with candlesticks whiskerbars, \
 	'' using ($0 + boxoff):18:18:18:18 lc 2 lt -1 notitle with candlesticks, \
-	'' using ($0 + boxoff):19 lc 2 pt 2 notitle with linespoints, \
+	'' using ($0 + boxoff):19 lc 2 pt 2 notitle with points, \
 	seq_p using ($0 - boxoff):11:10:15:14 lc 3 title " " with candlesticks whiskerbars, \
 	'' using ($0 - boxoff):12:12:12:12 lc 3 lt -1 notitle with candlesticks, \
-	'' using ($0 - boxoff):13 lc 3 pt 2 notitle with linespoints, \
+	'' using ($0 - boxoff):13 lc 3 pt 2 notitle with points, \
 	seq_c using ($0 + boxoff):17:16:21:20 lc 4 title " " with candlesticks whiskerbars, \
 	'' using ($0 + boxoff):18:18:18:18 lc 4 lt -1 notitle with candlesticks, \
-	'' using ($0 + boxoff):19 lc 4 pt 2 notitle with linespoints, \
+	'' using ($0 + boxoff):19 lc 4 pt 2 notitle with points, \
 	'' using 0:18:xticlabels(1) lc -1 pt -1 title " " with points,
