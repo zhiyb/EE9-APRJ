@@ -1,3 +1,7 @@
+#!/usr/bin/env gnuplot
+# Box plot of performance comparison between
+# VixenLinky and VixenConsole on different platforms
+
 set terminal pdf size 3.5, 5
 set output out
 set tmargin at screen 0.9
