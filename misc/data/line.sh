@@ -9,4 +9,4 @@ dir="$(dirname "$dir")"
 host="$(basename "$dir")"
 echo -n "$host,$type,"
 
-grep -F : "$file" | grep -v "NA's" | sed 's/\s\+[0-9]*[a-zA-Z. ]\+\s*//g;s/:/ /g' | datamash -W transpose | xargs | tr ' ' ,
+grep -F : "$file" | grep -v "NA's" | sed 's/\s\+[0-9]*[a-zA-Z. ]\+:/ /g' | datamash -W transpose | xargs | tr ' ' ,

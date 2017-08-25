@@ -10,7 +10,7 @@ cfps=0
 echo "time,user,kernel,playback,controller"
 while read line; do
 	set -- $line
-	[[ "$line" == "" && "$ffps" != 0 ]] && echo "$time,$ucpu,$kcpu,$ffps,$cfps" && continue
+	[[ "$line" == "" && "$ffps" != 0 && "$cfps" != 0 ]] && echo "$time,$ucpu,$kcpu,$ffps,$cfps" && continue
 	[[ "$1" == @ ]] && time=$2 && continue
 	[[ "$2" == User ]] && ucpu=$1 && continue
 	[[ "$2" == Kernel ]] && kcpu=$1 && continue
