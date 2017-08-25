@@ -19,7 +19,7 @@ The execution engine consists of 4 stages for flexible and intuitive lighting se
 \begin{figure}[!t]
   \centering
   \includegraphics[width=0.85\textwidth]{Figs//V3-Engine-1.eps}
-  \caption{\footnotesize Vixen execution engine stages (adopted from \cite{vixen})}
+  \caption{\footnotesize Vixen execution engine stages (reproduced from \cite{vixen})}
   \label{fig:stages}
 \end{figure}
 
@@ -163,6 +163,8 @@ The \texttt{ffmpeg} framework consists of several individual libraries that woul
 There are multiple format types for a single video file. First of all, a video container format will be needed to encapsulate different streams of data, such as video stream, audio stream and subtitle text stream. These formats specify how data elements are stored inside a single file, but does not specify the encoding or compression format used by individual data streams. Some examples of this type of formats includes mp4, avi and mkv.
 
 For the video data stream, another set of encoding formats is used. For example, h265, h264, and mpeg. In addition, which colour space and colour channels will be used can also be specified. This is known as pixel format. It is often specified by combining colour channels, channel sizes and channel ordering together. The 2 most common colour spaces are YUV (luminance and chrominance) and RGB (red, green and blue). For example, pixel format "yuv444p" specifies colour space YUV with Y and UV channels taking 12 bytes per 4 pixels, and the channels are stored separately as planes. Similarly, pixel format "yuv420p" specifies YUV colour space with channels taking 6 bytes per 4 pixels, whereas "rgb24" specifies RGB colour space with R, G and B channels stored sequentially taking 3 bytes pre pixel.
+
+\cmt{Insert references}
 
 \section{Audio rendering engine}
 

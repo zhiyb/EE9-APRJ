@@ -48,10 +48,44 @@ The first noticeable benefit was reduction in sequence file size. The ``Raw'' se
 
 Using the video format, the exported sequence, audio and configuration information are combined into a single file. This reduction of file count can sometimes simplify the management and sharing of multiple sequences.
 
-The \texttt{yuv420p} encoded video listed in \tref{tbl:size} were transcoded from the \texttt{rgb24} encoded video using the \texttt{ffmpeg} command-line tool. It is possible to add support for multiple video formats as options to the developed video library to directly transcode from ``Raw"" sequence to other video formats. However, this can make the encoding process over complicated. Instead, other dedicated video transcoding tools can be used for the same task. The decoding routine used in playback engine was designed to support any video encoding format, by converting the video frames to \texttt{rgb24} format internally. This is another benefit of using a video file. All tools developed for general purpose video processing and editing can also be used for the exported sequences.
+The \texttt{yuv420p} encoded video listed in \tref{tbl:size} were transcoded from the \texttt{rgb24} encoded video using the \texttt{ffmpeg} command-line tool. It is possible to add support for multiple video formats as options to the developed video library to directly transcode from ``Raw"" sequence to other video formats. However, this can make the encoding process over complicated. Instead, other dedicated video transcoding tools can be used for the same task. The decoding routine used in playback engine was designed to support any video encoding format, by converting the video frames to \texttt{rgb24} format internally. This is another benefit of using a video file. All tools developed for general purpose video processing, editing and filtering can also be used for the exported sequences.
 
 With these sophisticated video compressing algorithms, a drop of the sequence loading speed was expected. Fortunately, the \texttt{ffmpeg} library is capable of utilising media acceleration features to speed up video decoding, such as SIMD instructions and dedicated video decoding hardware. However, a small resolution video, such as the $76 \times 76$ video from \fref{fig:video-info}, is more than capable of supporting thousands of controller channels. It may not leverage the full advantage of dedicated high resolution hardware video decoding accelerators.
 
-Within the 3 formats tested, \texttt{yuv420p} probably is the most common video encoding format currently. It is also more commonly supported by hardware video accelerators. However, \texttt{yuv420p} is not capable to store channel data losslessly with the same frame resolution. It is more suitable for storing realistic videos, where sudden colour changes between pixels are uncritical and not common. Colour degrade and cross-talk between channels are unavoidable with the \texttt{yuv420p} encoding format.
+\begin{figure*}[t]
+  \centering
+  \subfloat[\texttt{rgb} channel order]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-raw-scale.png}%
+  \label{fig:video-rgb}}\hfil
+  \subfloat[\texttt{yuv} channel order]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv-scale.png}%
+  \label{fig:video-yuv}}\hfil
+  \subfloat[\texttt{yuvp} channel order]{\includegraphics[width=0.3\textwidth]{Figs/video/y-u-v-scale.png}%
+  \label{fig:video-yuvp}}\\
+  %\subfloat[Constant rate factor 6]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-6-scale.png}}\hfil
+  %\subfloat[Difference blend]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-6-scale-diff.png}}\hfil
+  %\subfloat[XOR blend]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-6-scale-xor.png}}\\
+  \subfloat[Constant rate factor 12]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-12-scale.png}}\hfil
+  \subfloat[Difference blend]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-12-scale-diff.png}}\hfil
+  \subfloat[XOR blend]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-12-scale-xor.png}}\\
+  \subfloat[Constant rate factor 24]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-24-scale.png}}\hfil
+  \subfloat[Difference blend]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-24-scale-diff.png}}\hfil
+  \subfloat[XOR blend]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-24-scale-xor.png}}\\
+  %\subfloat[Constant rate factor 24]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv444p-24-scale.png}}\hfil
+  %\subfloat[Difference blend]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv444p-24-scale-diff.png}}\hfil
+  %\subfloat[XOR blend]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv444p-24-scale-xor.png}}\\
+  \subfloat[\texttt{yuv420p} encoding]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv420p-0-scale.png}%
+  \label{fig:video-420}}\hfil
+  \subfloat[Difference blend]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv420p-0-scale-diff.png}%
+  \label{fig:video-420-diff}}\hfil
+  \subfloat[XOR blend]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv420p-0-scale-xor.png}%
+  \label{fig:video-420-xor}}\\
+  \caption{\footnotesize Video encoding formats comparison of frame 13850}
+  \label{fig:video-pix_fmt}
+\end{figure*}
 
-\cmt{Varies encoding, formats, quality factor... Insert data table \wn{16}}
+There are several possible ways to encode sequence channel data into a video pixel format. \fref{fig:video-rgb}, \ref{fig:video-yuv} and \ref{fig:video-yuvp} shows 3 different channel orders tested. For the \texttt{rgb} format, channel data was copied line-by-line into a video frame buffer with \texttt{rgb24} pixel format. The channel data fills sequentially the red, green and blue channels of continuous pixels, also called packed format. Similarly, \fref{fig:video-yuv} was encoded as packed \texttt{yuv} for comparison. However, only planar pixel format of \texttt{yuv444} is available for video frames. The frame buffer stores an entire frame of \texttt{y} channel first, followed by a frame of \texttt{u} and \texttt{v} channels. For the packed \texttt{yuv} format, this requires complex buffer copying routine, may decrease the performance. \fref{fig:video-yuvp} shows the appearance of storing channel data as planar \texttt{yuv} format. Because the example sequence contains lots of \texttt{RGB} elements, pixels with similar colours were all separated by two other pixels in the planar format. This separation resulted in lots of sharp pixel boundaries, which can be badly degraded when transcoding to lower quality video settings.
+
+The second and third rows of \fref{fig:video-pix_fmt} show the quality degradation with lower quality settings using the same \texttt{rgb24} pixel format. The increase of the constant quality factor (CRF) means the video data rate will be more restricted and reduced. The frame difference of CRF 12 is hardly visible, but the \texttt{XOR} blend clearly shows there are binary differences to the reference frame.
+
+Within the 3 formats tested, \texttt{yuv420p} probably is the most common video encoding format currently. It is also more commonly supported by hardware video accelerators. However, \texttt{yuv420p} is not capable to store channel data losslessly with the same image resolution. It is more suitable for storing realistic videos, where sudden colour changes between pixels are uncritical and not common. Colour degrade and cross-talk between channels are unavoidable with the \texttt{yuv420p} encoding format, as shown by the last row of \fref{fig:video-pix_fmt}.
+
+\cmt{Insert data table \wn{16}}
