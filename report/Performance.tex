@@ -19,3 +19,5 @@
 \fref{fig:perf-RPi} shows the performance comparison between different implementations on Raspberry Pi B+. \texttt{VixenLinky} (referenced by \texttt{raw}) has the highest refresh rate for its simplicity. \texttt{VixenConsole} with the ``Raw'' sequence format (referenced by \texttt{seq}) has the second highest performance. The unlimited playback performance drops to almost half when using a \texttt{rgb24} encoded video as the input (referenced by \texttt{v}). The performance drops again by a small factor when audio stream was also added to the video input (referenced by \texttt{va}). The video only playback performance of \texttt{yuv420p} encoding (referenced by \texttt{v420}) is only a little bit higher than the lossless \texttt{rgb24} encoding (\texttt{v}), whereas the performance of lossless \texttt{yuv444p} encoding (referenced by \texttt{vyuv}) is noticeably lower. Therefore, video encoding format of \texttt{libx264rgb} with \texttt{rgb24} pixel format is more suitable for encoding video sequences.
 
 \cmt{Test different container formats?}
+
+\cmt{Performance of NAS/TX2 to show incomparable performance improvement over original Vixen application}

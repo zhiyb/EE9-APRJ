@@ -13,6 +13,8 @@ The original core codebase from \texttt{Vixen.dll} was used in this program with
 
 The \texttt{FMOD} plugin used by the Vixen GUI application was outdated, no longer available for download. Therefore, audio playback using the ``Raw'' sequence was unsupported by \texttt{VixenConsole}.
 
+\texttt{Use crontab instead of a built-in show scheduler}
+
 \section{Loading performance}
 
 On an embedded platform with limited computation power, the loading time of \texttt{VixenConsole} and all controller modules can take a significant time. The implemented \texttt{tidy} operation can reduce a small portion of the loading time, by remove unused settings for elements and filters. It also reduces the size of XML settings file.

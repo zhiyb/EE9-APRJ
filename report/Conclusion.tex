@@ -3,24 +3,26 @@
 \label{chap:Conclusion}
 %\setlength{\parindent}{0pt}
 
-\cmt{Varies methods of analysing and optimising resource intensive application. Now possible on an embedded platform for greater flexibility and power efficiency.}
+The runtime performance of Vixen lighting control application was greatly improved, by changing the data preparation process and developing a new simplified playback engine. The performance improvement was incomparable to the original execution engine, so that even embedded platforms are now able to easily handle sophisticated lighting sequences with thousands of controller channels.
+
+A new CUI application with the new playback engine was developed specifically for embedded platforms to simplify control and management operations. Using an embedded device instead of a powerful computer to control the lighting controllers also gives greater flexibility with reduced power consumption.
+
+Sequence export and playback of video format were implemented. Commonly available video processing, editing and analysing tools can be used together with the playback engine for more functionality and flexibility. The video format together with audio stream muxing and metadata configuration support also helps with data management and sharing.
 
 \section{Limitations}
 
-\cmt{Lower performance than controller dedicated applications
+Although the performance improvement was huge, the \texttt{VixenConsole} application was still unavoidably slower than controller dedicated implementations, due to its generic modular design.
 
-Video format not very useful for editing
+The video sequences generally have extremely small frame resolution compared to modern videos and movies. The optimal encoding format requirements for sequences are also different from realistic videos. Therefore, the Vixen application may not benefit much from common video processing tools.
 
-Increased user interface complexity}
+Although the CUI application gives easier controllability with performance improvements, it is not as intuitive and user-friendly as a GUI application. For users without previous experiences of using CUI applications, it can be very confusing to work with.
 
 \section{Future works}
 
-\subsection{Implementation improvements}
-\hfill
-The integration between original execution engine and the new playback engine can be improved. Currently, the playback engine takes priority over the execution engine, which might cause unwanted behaviour under certain circumstances. Playback contexts may also be implemented to cache multiple playback sequences information. The engines should be switched off during idle to further reduce CPU usage.
+Some code segments, such as the playback engine control form (\fref{fig:vixen_playback}), can be improved. These code segments were implemented only with proof-of-concept level of details. More extensive exception checks and user friendly additional functionalities are needed.
 
-Support for preview display was not implemented for the playback engine, since the preview works in elements workspace whereas the playback engine works entirely in hardware controller workspace. It might be possible to extract mapping configurations during export, but support for preview is considered optional with lower priority.
+The integration between original execution engine and the new playback engine can be improved. Currently, the playback engine takes priority over the execution engine, which might cause undesired behaviour under certain circumstances. The execution engines should also be switched off during idle to further reduce CPU usage.
 
-\subsection{Video channel mapping}
-\hfill
-\cmt{Map channels as preview layout? For easy preview and modification using existing software.}
+Support for element back-mapping and preview display was not implemented for the playback engine yet. It may require extraction of mapping configurations during export.
+
+The video channel mapping can be more intuitive. For example, map controller channels using the preview layout design. In this way, the sequence can be directly previewed and edited using existing multimedia software.

@@ -50,9 +50,7 @@ The first noticeable benefit was reduction in sequence file size. The ``Raw'' se
   \label{tbl:size}
 \end{table}
 
-Using the video format, the exported sequence, audio and configuration information are combined into a single file. This reduction of file count can sometimes simplify the management and sharing of multiple sequences.
-
-\cmt{The metadata length limitation on Raspberry Pi}
+Using the video format, the exported sequence, audio and configuration information are combined into a single file. This reduction of file count can sometimes simplify the management and sharing of multiple sequences. However, an unexpected limitation on metadata length was encountered on Raspberry Pis. The \texttt{libav} fork of \texttt{ffmpeg} provided by the raspbian distribution of version jessie has an arbitrary limitation of 1000 characters for metadata field length, not enough for all XML configuration information. To work around this issue, some inactive fields of the XML configuration was removed for Raspberry Pis. To completely remove this issue, newer version of \texttt{ffmpeg} without this limitation can be compiled for Raspberry Pis.
 
 The \texttt{yuv420p} encoded video listed in \tref{tbl:size} were transcoded from the \texttt{rgb24} encoded video using the \texttt{ffmpeg} command-line tool. It is possible to add support for multiple video formats as options to the developed video library to directly transcode from ``Raw"" sequence to other video formats. However, this can make the encoding process over complicated. Instead, other dedicated video transcoding tools can be used for the same task. The decoding routine used in playback engine was designed to support any video encoding format, by converting the video frames to \texttt{rgb24} format internally. This is another benefit of using a video file. All tools developed for general purpose video processing, editing and filtering can also be used for the exported sequences.
 
@@ -96,4 +94,4 @@ The second and third rows of \fref{fig:video-pix_fmt} show the quality degradati
 
 Within the 3 formats tested, \texttt{yuv420p} probably is the most common video encoding format currently. It is also more commonly supported by hardware video accelerators. However, \texttt{yuv420p} is not capable to store channel data losslessly with the same image resolution. It is more suitable for storing realistic videos, where sudden colour changes between pixels are uncritical and not common. Colour degrade and cross-talk between channels are unavoidable with the \texttt{yuv420p} encoding format, as shown by the last row of \fref{fig:video-pix_fmt}.
 
-\cmt{Insert data table \wn{16}}
+\cmt{Insert data table about file sizes, data rates and PSNR \wn{16}}
