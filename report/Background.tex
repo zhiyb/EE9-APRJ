@@ -5,7 +5,7 @@
 
 \section{Vixen overview}
 
-\PARstart{T}{he} Vixen application was based on Microsoft Windows .NET runtime \cite{dotnet}, developed using Microsoft Visual Studio \cite{msvs}. It is capable of loading modules as dynamic-link libraries (DLL) during runtime. Most of its components such as controllers, lighting effects and editor were implemented as separate modules. \fref{fig:vixen-main} shows the main application interface.
+\PARstart{T}{he} Vixen application was based on Microsoft Windows .NET runtime library \cite{platt2002introducing}, developed with C\# programming language \cite{hejlsberg2003c} using Microsoft Visual Studio \cite{msvs}. It is capable of loading modules as dynamic-link libraries (DLL) during runtime. Most of its components such as controllers, lighting effects and editor were implemented as separate modules. \fref{fig:vixen-main} shows the main application interface.
 
 \begin{figure}[!t]
   \centering
@@ -86,32 +86,32 @@ The hardware specifications are listed below:
 
 Multiple Linux based systems with a variety of resource configurations, ranging from high performance desktop platforms to low-end embedded platforms, were used for performance testing, as listed in \tref{tbl:linux}.
 
-\begin{table}[!h]
+\begin{table}[t]
   \centering
   \begin{tabular}{l|l|l|l|l}
     \hline
     \textbf{Name} & \textbf{Architecture} & \textbf{CPU} & \textbf{Specification} & \textbf{RAM} \\
     \hline
-    NAS         & x86\_64 & AMD FX-8350       & 8 cores @ 4.0GHz  & 16GiB   \\ \hline
-    Jetson TX2  & aarch64 & NVIDIA Tegra X2   & 6 cores @ 2.0GHz  & 8GiB    \\ \hline
-    RPi 3B      & armv7l  & Broadcom BCM2837  & 4 cores @ 1.2GHz  & 1GiB    \\ \hline
-    RPi Zero W  & armv6l  & Broadcom          & 1 core @ 1.0GHz   & 512MiB  \\ \hline
-    RPi B+      & armv6l  & Broadcom BCM2835  & 1 core @ 900MHz   & 512MiB  \\ \hline
-    Noah NP1380 & mipsel  & Ingenic JZ4740    & 1 core @ 336MHz   & 64MiB   \\ \hline
+    NAS         & x86\_64 & AMD FX-8350       & 8 cores @ 4.0 GHz  & 16 GiB   \\ \hline
+    Jetson TX2  & aarch64 & NVIDIA Tegra X2   & 6 cores @ 2.0 GHz  & 8 GiB    \\ \hline
+    RPi 3B      & armv7l  & Broadcom BCM2837  & 4 cores @ 1.2 GHz  & 1 GiB    \\ \hline
+    RPi Zero W  & armv6l  & Broadcom          & 1 core @ 1.0 GHz   & 512 MiB  \\ \hline
+    RPi B+      & armv6l  & Broadcom BCM2835  & 1 core @ 900 MHz   & 512 MiB  \\ \hline
+    Noah NP1380 & mipsel  & Ingenic JZ4740    & 1 core @ 336 MHz   & 64 MiB   \\ \hline
   \end{tabular}
   \caption{\footnotesize Linux based systems}
   \label{tbl:linux}
 \end{table}
 
-It is possible to install Microsoft Windows IoT system on some of the testing platforms. However, system, driver and runtime support were still not available for all of the testing platforms. Therefore, Debian \cite{debian} based Linux distributions including Ubuntu \cite{ubuntu} and Raspbian \cite{raspbian} were used on these systems.
+It is possible to install Microsoft Windows IoT system on some of the testing platforms. However, system, driver and runtime support were still not available for all of the testing platforms. Therefore, Debian \cite{debian} based Linux distributions of Debian stretch \cite{debian}, Ubuntu xenial \cite{ubuntu} or Raspbian jessie \cite{raspbian} were used on these systems.
 
 \section{Microsoft .NET runtime}
 
 \subsection{Microsoft Windows based}
 
-Vixen runs on top of Microsoft's .NET runtime library \cite{platt2002introducing}, using C\# \cite{hejlsberg2003c} as the primary programming language, with the exception of a few dependency libraries written in C/C++.
+Most modules included with Vixen were also based on Microsoft's .NET runtime and C\#, with the exception of a few dependency libraries written in C \cite{kernighan1988c} or C++ \cite{stroustrup1995c++} for optional functionality such as audio playback.
 
-The GUI of Vixen also relies on some legacy fragments of Windows Presentation Foundation (WPF) \cite{wpf}. Fortunately, the core functionality of Vixen does not require WPF, which makes it possible to be ported to Linux based systems.
+Part of the Vixen GUI relies on DirectX interface \cite{directx} and some legacy fragments of Windows Presentation Foundation (WPF) \cite{wpf}. Fortunately, the core functionality of Vixen does not require these components, makes it possible to be ported to Linux based systems.
 
 \subsection{Linux based}
 
@@ -133,13 +133,13 @@ The only possible solution was to using the mono project runtime implementation.
 
 Since the overall process of Vixen lighting show is similar to video rendering, to support video format input, a multimedia codec library need to be used for decoding media files. It is impractical to implement numerous video decoding algorithms for different video formats in the time frame of this project, using an existing library would hide all the complicated implementation details.
 
-For cross-platform support, an open source implementation would be more suitable. The most popular libraries are ffmpeg \cite{ffmpeg} and mencoder in mplayer \cite{mplayer}. The ffmpeg framework was chosen over mplayer, because it was more actively maintained with varies hardware acceleration capabilities.
+For cross-platform support, an open source implementation would be more suitable. The most popular libraries are \texttt{ffmpeg} \cite{ffmpeg} and \texttt{mencoder} in \texttt{mplayer} \cite{mplayer}. The \texttt{ffmpeg} framework was chosen over \texttt{mplayer}, because it was more actively maintained with varies hardware acceleration capabilities.
 
-Because the library binaries was used directly without modification to the source code, this should not violates the LGPL license ffmpeg was licensed by.
+Because the Vixen application itself is open sourced and the library binaries was used directly without modification to the source code, this should not violates the GPL license complaint of the \texttt{libx264} library therefore also the \texttt{ffmpeg} library.
 
-The ffmpeg framework consists of several individual libraries that would be useful to this project, as listed in \tref{tbl:ffmpeg}.
+The \texttt{ffmpeg} framework consists of several individual libraries that would be useful to this project, as listed in \tref{tbl:ffmpeg}.
 
-\begin{table}[!h]
+\begin{table}[t]
   \centering
   \begin{tabular}{l|l}
     \hline
@@ -166,9 +166,9 @@ For the video data stream, another set of encoding formats is used. For example,
 
 \section{Audio rendering engine}
 
-Unlike Microsoft Windows with definitive audio API, Linux has multiple audio libraries such as PulseAudio \cite{developers2013pulseaudio} and ALSA \cite{alsa} with complex audio framework structure. To simplify the underlying structure and enable cross-platform capability, the FMOD \cite{fmod} low-level API library was used. Despite being proprietary, it is available across Windows, Linux and also ARM based embedded platforms with unified easy-to-use API.
+Unlike Microsoft Windows with definitive audio API, Linux has multiple audio libraries such as \texttt{PulseAudio} \cite{developers2013pulseaudio} and \texttt{ALSA} \cite{alsa} with complex audio framework structure. To simplify the underlying structure and enable cross-platform capability, the \texttt{FMOD} \cite{fmod} low-level API library was used. Despite being proprietary, it is available across Windows, Linux and also ARM based embedded platforms with unified easy-to-use API.
 
-The original Vixen application already uses FMOD as a plugin in the original execution engine. However, the version it uses was out-dated without available documentation, and the plugin is only capable of playing audio files. Therefore, a more recent version was required. Furthermore, although the library has provided a set of C\# APIs, but the essential functionality required for playing custom audio stream was lacking, C/C++ APIs need to be used.
+The original Vixen application already uses \texttt{FMOD} as a plugin in the original execution engine. However, the version it uses was out-dated without available documentation, and the plugin is only capable of playing audio files. Therefore, a more recent version was required. Furthermore, although the library has provided a set of C\# APIs, but the essential functionality required for playing custom audio stream was lacking, C/C++ APIs need to be used.
 
 \section{Performance analysers}
 
