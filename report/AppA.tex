@@ -3,7 +3,7 @@
 \label{App:tests}
 
 \begin{lstfloat}
-\begin{lstlisting}[language=make,label=lst:makefile,captionpos=b,caption={Makefile used for automated performance tests}]
+\begin{lstlisting}[language=make,label=lst:makefile,captionpos=b,caption={\footnotesize Makefile used for automated performance tests}]
 SEQ	= ~/Vixen/luf2016_the-ark_20ms_Network.xml
 VA	= ~/Vixen/2016.rgb24.audio.test_enc.mp4
 V	= ~/Vixen/2016.rgb24.test_enc.mp4
@@ -42,7 +42,7 @@ v420-normal v420-playback v420-controller: $(V420)
 \iffalse
 \lref{lst:makefile} shows one Makefile used for video transcoding and PSNR testing.
 
-\begin{lstlisting}[float,floatplacement=ht,language=XML,label=lst:makefile,captionpos=b,caption={Makefile used for automated video transcoding}]
+\begin{lstlisting}[float,floatplacement=ht,language=XML,label=lst:makefile,captionpos=b,caption={\footnotesize Makefile used for automated video transcoding}]
 INPUT	?= $(wildcard *raw.mp4)
 AUDIO	?= $(wildcard *audio.mp3)
 OUTPUT	:= yuv444p-0.mp4 yuv444p-6.mp4 yuv444p-12.mp4 yuv420p-0.mp4

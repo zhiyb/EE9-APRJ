@@ -20,7 +20,7 @@ The Vixen application uses a separate thread for each task. It has the main GUI 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.8\columnwidth]{original}
-  \caption{Performance of original Vixen execution engine}
+  \caption{\footnotesize Performance of original Vixen execution engine}
   \label{fig:original}
 \end{figure}
 
@@ -29,14 +29,14 @@ Further analysis using Microsoft Visual Studio's sampling profiler shows, around
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.85\columnwidth]{Figs/vixen_perf_original.png}
-  \caption{Hot path analysis of Vixen update threads}
+  \caption{\footnotesize Hot path analysis of Vixen update threads}
   \label{fig:vixen_perf_original}
 \end{figure}
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.85\columnwidth]{Figs/vixen_perf_original_overview.png}
-  \caption{Hot path analysis of original Vixen application}
+  \caption{\footnotesize Hot path analysis of original Vixen application}
   \label{fig:vixen_perf_original_overview}
 \end{figure}
 
@@ -55,7 +55,7 @@ The result Vixen application for Linux has a distorted main GUI with unreasonabl
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.8\columnwidth]{Figs/vixen_linux_controllers.png}
-  \caption{Controller modules loaded on Linux port of Vixen application}
+  \caption{\footnotesize Controller modules loaded on Linux port of Vixen application}
   \label{fig:vixen_linux_main}
 \end{figure}
 
@@ -79,7 +79,7 @@ A custom controller module (\texttt{TCPLinky}) was developed based on one of its
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.6\columnwidth]{Figs/tcplinky_server.png}
-  \caption{Screenshot of \texttt{TCPLinky} controller server application}
+  \caption{\footnotesize Screenshot of \texttt{TCPLinky} controller server application}
   \label{fig:tcplinky_server}
 \end{figure}
 
@@ -89,7 +89,7 @@ Although the custom controller module is capable of dumping outputs, it can not 
 
 The export function was originally used to convert the lighting sequence to formats recognisable by other controller specific applications. It renders the sequence using a manual timing source stepped after each frame, gives accurate constant data dump intervals. It can also write all controller channel mapping information to a separate XML file. An example XML file is shown by \lref{lst:network_xml}.
 
-\begin{lstlisting}[float,floatplacement=ht,language=XML,label=lst:network_xml,captionpos=b,caption={Example controller mapping XML file}]
+\begin{lstlisting}[float,floatplacement=ht,language=XML,label=lst:network_xml,captionpos=b,caption={\footnotesize Example controller mapping XML file}]
 <?xml version="1.0" encoding="utf-8"?>
 <Vixen3_Export>
   <Resolution>20</Resolution>
@@ -120,7 +120,7 @@ To support the purposed optimised playback engine, audio media file path was add
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.75\columnwidth]{Figs/vixen_export.png}
-  \caption{Modified Vixen export dialog window}
+  \caption{\footnotesize Modified Vixen export dialog window}
   \label{fig:vixen_export}
 \end{figure}
 

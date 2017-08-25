@@ -56,11 +56,13 @@ Vixen also has a preview display. It maps element outputs to sets of points on a
   \label{fig:vixen-preview}
 \end{figure}
 
-The Vixen application also features a show scheduler to automatically start a predefined sequence at specific time. Before the shows can be started, the scheduler need to pre-process all scheduled items first. Sequences use the original execution engine need a pre-rendering process, which can take a significant amount of time. 
+The Vixen application also features a show scheduler to automatically start a predefined sequence at specific time. Before the shows can be started, the scheduler need to pre-process all scheduled items first. Sequences use the original execution engine need a pre-rendering process, which can take a significant amount of time.
 
 \section{Similar applications}
 
-\cmt{Further background researches may need to be done, such as analysing other lighting control applications' performances and their implementations.}
+\cmt{Not really needed?
+
+Further background researches may need to be done, such as analysing other lighting control applications' performances and their implementations.}
 
 \section{Testing platforms}
 
@@ -97,7 +99,7 @@ Multiple Linux based systems with a variety of resource configurations, ranging 
     RPi B+      & armv6l  & Broadcom BCM2835  & 1 core @ 900MHz   & 512MiB  \\ \hline
     Noah NP1380 & mipsel  & Ingenic JZ4740    & 1 core @ 336MHz   & 64MiB   \\ \hline
   \end{tabular}
-  \caption{Linux based systems}
+  \caption{\footnotesize Linux based systems}
   \label{tbl:linux}
 \end{table}
 
@@ -152,7 +154,7 @@ The ffmpeg framework consists of several individual libraries that would be usef
     libpostproc & Post processing library \\ \hline
     libswscale & Colour conversion and scaling library  \\ \hline
   \end{tabular}
-  \caption{Different libraries provided by ffmpeg framework (sourced from \cite{ffmpeg})}
+  \caption{\footnotesize Different libraries provided by ffmpeg framework (sourced from \cite{ffmpeg})}
   \label{tbl:ffmpeg}
 \end{table}
 
@@ -185,3 +187,5 @@ The original profiler with Vixen uses the \texttt{Process} class provided by Mic
 On Linux, there are statistic files in the proc file system \cite{proc} provided by the kernel. Per-process information about CPU jiffies, disk I/O statistics are available by reading corresponding files.
 
 \cmt{More information about the proc file system?}
+
+\cmt{Performance comparison between multiple platforms, benchmark tools}
