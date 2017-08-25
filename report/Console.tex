@@ -11,6 +11,8 @@ The original core codebase from \texttt{Vixen.dll} was used in this program with
 
 \texttt{VixenConsole} reads configurations from the same location as Vixen application, the \texttt{Vixen 3} folder from user home directory. All configurations are stored as XML files, exported directly from settings object using XML serialiser. The ability to list available controllers and their configurations were added to \texttt{VixenConsole}. However, configuration modification was not yet possible from \texttt{VixenConsole}, due to the complexity of supporting every types of configuration fields within the project time constraint. To create or modify the configuration, the Vixen GUI application can be used from a computer running Microsoft Windows. Editing the XML configuration files directly using text editors is also possible.
 
+The \texttt{FMOD} plugin used by the Vixen GUI application was outdated, no longer available for download. Therefore, audio playback using the ``Raw'' sequence was unsupported by \texttt{VixenConsole}.
+
 \section{Loading performance}
 
 On an embedded platform with limited computation power, the loading time of \texttt{VixenConsole} and all controller modules can take a significant time. The implemented \texttt{tidy} operation can reduce a small portion of the loading time, by remove unused settings for elements and filters. It also reduces the size of XML settings file.

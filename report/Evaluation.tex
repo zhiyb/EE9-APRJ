@@ -83,6 +83,8 @@ A custom controller module (\texttt{TCPLinky}) was developed based on one of its
   \label{fig:tcplinky_server}
 \end{figure}
 
+The reference controller implementation \texttt{BlinkyLinky} skips sending data packets when no data change was detected. However, this is not desired for performance analysis. Therefore, this mechanism was bypassed by the \texttt{TCPLinky} controller. Data packets will be sent regardless of whether data changes detected or not.
+
 \section{Export sequence}
 
 Although the custom controller module is capable of dumping outputs, it can not give the indication of sequence start, end and information about other controllers. More notably, it can have unstable frame rates influenced by CPU usage. A high performance computer is needed for near prefect pre-rendering by controller dump. Therefore, the existing sequence export function from sequence editor was used instead.

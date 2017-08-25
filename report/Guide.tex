@@ -4,3 +4,24 @@
 %\setlength{\parindent}{0pt}
 
 \cmt{\url{http://www.imperial.ac.uk/electrical-engineering/internal/current-students-course-handbook/msc-individual-research-project/writing-the-report-}}
+
+\begin{lstlisting}[language=,label=lst:guide]
+Usage:  VixenConsole.exe [options] [commands...]
+
+Options:
+    -p itvl			| Start profiler with interval of itvl milliseconds
+    -u playback			| Unlimit the update rate of playback frames
+    -u controller		| Unlimit the update rate of controllers
+
+Available commands:
+    controller list		| List available controller modules
+    controller config		| List current controller configurations
+    tidy			| Remove unused sections from configuration files
+    start file1 file2...	| Start playback with sequence file1 file2...
+
+Supported sequence file formats:
+    *_Network.xml		| Raw sequence data
+    *.avi, *.mp4, ...		| Video sequence data
+\end{lstlisting}
+
+\cmt{Information about configuration files and sequence files?}
