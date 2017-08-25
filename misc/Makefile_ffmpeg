@@ -1,9 +1,13 @@
+# Makefile for transcoding video formats, frame extract and filtering
+
 INPUT	?= $(wildcard *raw.mp4)
 AUDIO	?= $(wildcard *audio.mp3)
-OUTPUT	:= yuv444p-0.mp4 yuv444p-6.mp4 yuv444p-12.mp4 yuv420p-0.mp4
-OUTPUT	+= rgb24-0.mp4 rgb24-6.mp4 rgb24-12.mp4 rgb24-24.mp4
-OUTPUT	+= yuv444p-scale.mp4
-OUTPUT	+= rgb24-0-audio.mp4
+PNG	:= yuv444p-0 yuv444p-6 yuv444p-12 yuv444p-24 yuv420p-0
+PNG	+= rgb24-0 rgb24-6 rgb24-12 rgb24-24
+OUTPUT	:= $(PNG:%=%-scale-diff.png) $(PNG:%=%-scale-xor.png)
+OUTPUT	+= yuv444p-scale.mp4 rgb24-0-audio.mp4
+OUTPUT	+= yuv-scale.png y-u-v-scale.png
+FRAME	?= 13850
 
 ROOT	:= $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 
@@ -30,6 +34,18 @@ yuv444p-%.mp4: $(INPUT)
 
 rgb24-%.mp4: $(INPUT)
 	ffmpeg -i "$<" -crf $* -codec:v libx264rgb -pix_fmt rgb24 -y "$@"
+
+%.png: %.mp4
+	ffmpeg -i "$<" -vf "select=gte(n\,$(FRAME))" -vframes 1 -y "$@"
+
+%-scale.png: %.png $(MAKEFILE_LIST)
+	ffmpeg -i "$<" -vf "scale=iw*8:ih*8" -sws_flags neighbor -y "$@"
+
+%-xor.png: $(INPUT:%.mp4=%-scale.png) %.png
+	ffmpeg -i "$<" -i "$*.png" -filter_complex "blend=all_mode=xor" -y "$@"
+
+%-diff.png: $(INPUT:%.mp4=%-scale.png) %.png
+	ffmpeg -i "$<" -i "$*.png" -filter_complex "blend=all_mode=difference" -y "$@"
 
 psnr-%: $(ROOT)psnr.sh % $(INPUT)
 	$^ 2>&1 | tail -n 1
