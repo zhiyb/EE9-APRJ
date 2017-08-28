@@ -6,6 +6,9 @@ BIB	= $(wildcard *.bib)
 .PHONY: all
 all: $(PDF)
 
+.SECONDARY:
+.DELETE_ON_ERROR:
+
 %.pdf: %.tex %.bbl
 	pdflatex --shell-escape $<
 	pdflatex --shell-escape $<
