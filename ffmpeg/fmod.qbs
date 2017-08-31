@@ -7,6 +7,7 @@ Project {
         consoleApplication: true
         Depends {name: "codec"}
         cpp.rpaths: qbs.installRoot
+        cpp.cxxLanguageVersion: "c++11"
 
         files: [
             "audio.mp3",

@@ -37,6 +37,8 @@ int main(int argc, char *argv[])
 		goto err_fmod;
 
 	for (;;) {
+		if (!fmod_is_playing(data))
+			break;
 		int got, video;
 		AVPacket *pkt = decode_read_packet(data, &got, &video);
 		if (!got)
