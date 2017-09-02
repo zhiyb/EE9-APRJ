@@ -3,19 +3,13 @@
 \label{chap:Eval}
 %\setlength{\parindent}{0pt}
 
-\section{Locale issue}
-
-Initially, the Vixen project was unable to be built on the Windows system. The problem was caused by different system locale setting from English to Chinese, affecting the file encoding the compiler assumes. Special characters such as \"a were misunderstood as other string literals, failed the compilation.
-
-There are 2 possible solutions to the problem. The system locale can be changed, or specify the actual file encoding to the compiler. In order to have a permanent solution, the \texttt{CodePage} setting was specified in the project file \cite{codepage}, although the setting itself was undocumented for project files.
-
 \section{Original performance}
 
-The original Vixen application already has an built-in instrumentation display interface that can show runtime performance figures such as controller update speeds. However, it lacks some elemental functionalities for performance analysis. Data logging, playback timestamps and CPU usage logging were added for performance analysis.
+The original Vixen application already has \ca{a} built-in instrumentation display interface that can show runtime performance figures such as controller update speeds. However, it lacks some elemental functionalities for performance analysis. Data logging, playback timestamps and CPU usage logging were added for performance analysis.
 
-The Vixen application uses a separate thread for each task. It has the main GUI thread for editor, a preview rendering thread and multiple dedicated threads for active controllers. This multi-threading structure can take advantage of modern multi-core multi-thread processors. However, performance on a single core machine can be poor due to context switching. Mutex locks are also required to resolve potential data access conflict, further increases the overhead.
+The Vixen application uses a separate thread for each task. It has the main GUI thread for editor, a preview rendering thread and multiple dedicated threads for active controllers. This multi-threading structure can take advantage of modern multi-core multi-thread processors. However, performance on a single core machine can be poor due to context switching. Mutex locks are also required to resolve potential data access conflict, further \ca{increasing} the overhead.
 
-\fref{fig:original} shows the performance of the original Vixen execution engine. The CPU usage frequently reaches above $90 \%$, while the refresh rate being very unstable around the configured 20 fps. Especially at the first 60 seconds, the refresh rate drops to 5 fps while trying to keep up with element updates. At the same time, the CPU usage was about $50 \%$. On a dual-core machine, this implies one of the cores was running at full load while the other one was mostly idle. \wn{2}
+\fref{fig:original} shows the performance of the original Vixen execution engine. The CPU usage frequently reaches above $90 \%$, while the refresh rate \ca{is} very unstable around the configured 20 fps. Especially \ca{during} the first 60 seconds, the refresh rate drops to 5 fps while trying to keep up with element updates. At the same time, the CPU usage was about $50 \%$. On a dual-core machine, this implies one of the cores was running at full load while the other one was mostly idle. \wn{2}
 
 \begin{figure}[t]
   \centering
@@ -24,7 +18,7 @@ The Vixen application uses a separate thread for each task. It has the main GUI 
   \label{fig:original}
 \end{figure}
 
-Further analysis using Microsoft Visual Studio's sampling profiler shows, around $24.7 \%$ of total CPU time was wasted between translation layers for generating controller commands (\texttt{GenerateCommand}), while the actual command assignment (\texttt{\_8BitEvaluator}) takes less than $0.5 \%$ of CPU time, as shown by \fref{fig:vixen_perf_original} hot path analysis. Another $23.0 \%$ CPU time was used for filter and element updates, $26.0 \%$ for preview rendering and $16.9 \%$ for the sequence editor, as shown by \fref{fig:vixen_perf_original_overview}. The CPU time used for controller updates is almost negligible.
+Further analysis using Microsoft Visual Studio's sampling profiler shows, around $24.7 \%$ of total CPU time was \ca{spent} between translation layers for generating controller commands (\texttt{GenerateCommand}), while the actual command assignment (\texttt{\_8BitEvaluator}) takes less than $0.5 \%$ of CPU time, as shown \ca{in} \fref{fig:vixen_perf_original} hot path analysis. Another $23.0 \%$ CPU time was used for filter and element updates, $26.0 \%$ for preview rendering and $16.9 \%$ for the sequence editor, as shown \ca{in} \fref{fig:vixen_perf_original_overview}. The CPU time used for controller updates is almost negligible.
 
 \begin{figure}[t]
   \centering
@@ -40,17 +34,17 @@ Further analysis using Microsoft Visual Studio's sampling profiler shows, around
   \label{fig:vixen_perf_original_overview}
 \end{figure}
 
-The translation layers are used for determining the actual controller command format. There are several different command formats possible for varies controllers. For example, 8-bit, 16-bit or RGB channels. Therefore, the application need to resolve the actual types of commands for specific assignment handlers from a common command base type, which apparently very inefficient in C\#. This process is called \texttt{dispatch} in the source code, it must be minimised in order to improve performance. \wn{3}
+The translation layers are used for determining the actual controller command format. There are several different command formats \ca{for various} controllers. For example, 8-bit, 16-bit or RGB channels. Therefore, the application \ca{needs} to resolve the actual types of commands for specific assignment handlers from a common command base type, which \ca{is} apparently very inefficient in C\#. This process is called \texttt{dispatch} in the source code\ca{;} it must be minimised in order to improve performance.
 
-The implementation of preview display was also very inefficient, uses only software instance management and sequential rendering. It can be improved by the utilisation of GPU through DirectX or OpenGL.
+The implementation of \ca{the} preview display was also very inefficient, \ca{using} only software instance management and sequential rendering. It can be improved by the utilisation of GPU through DirectX or OpenGL.
 
 Multiple real-world lighting sequences and testing sequences were tested. They all show similar performance characteristics with unstable playback frame rate for moderately complicated lighting effects.
 
 \section{Port to Linux}
 
-It takes some necessary modifications for Vixen to run on Linux using mono runtime. The MonoDevelop IDE \cite{monodevelop} helps by directly supporting Microsoft Visual Studio projects. However, C/C++ projects were not supported, and pre-built dynamic runtime libraries developed using C/C++ for Microsoft Windows were also not support by mono. All code references to WPF and FMOD audio must be removed for the project to build and run.
+It \ca{took} some necessary modifications for Vixen to run on Linux using mono runtime. The MonoDevelop IDE \cite{monodevelop} \ca{helped} by directly supporting Microsoft Visual Studio projects. However, C/C++ projects were not supported, and pre-built dynamic runtime libraries developed using C/C++ for Microsoft Windows were also not support by mono. All code references to WPF and FMOD audio \ca{had to be} removed for the project to build and run.
 
-The result Vixen application for Linux has a distorted main GUI with unreasonably long vertical window size. The sequence editor, display setup and preview would either not load or crash the entire application. Fortunately, all controller modules can be loaded and the core execution engine and controller update threads were working properly. \fref{fig:vixen_linux_main} shows some loaded controller modules and partially working GUI.
+The \ca{resulting} Vixen application for Linux has a distorted main GUI with unreasonably long vertical window size. The sequence editor, display setup and preview would either not load or crash the entire application. Fortunately, all controller modules \ca{could} be loaded and the core execution engine and controller update threads were working properly. \fref{fig:vixen_linux_main} shows some loaded controller modules and partially working GUI.
 
 \begin{figure}[t]
   \centering
@@ -59,22 +53,22 @@ The result Vixen application for Linux has a distorted main GUI with unreasonabl
   \label{fig:vixen_linux_main}
 \end{figure}
 
-The intended optimised Vixen application would be command-line user interface (CUI) only with minimal essential functionality. Therefore, the broken GUI should not be an issue.
+The intended optimised Vixen application would be command-line user interface (CUI) only with minimal essential functionality. Therefore, the broken GUI should not be an issue\ca{, as GUI related code and modules will not be accessed in the CUI application}.
 
 \section{Extract rendered sequence}
 
-Instead of trying to improve the original execution engine, the performance problem may be eliminated by playing pre-rendered controller layer data frames directly to individual hardware controllers. Channel data type information can be stored separately without the need to resolve through translation layers during runtime. Element updates, Filter updates, preview and sequence editor are all necessary for playback.
+Instead of trying to improve the original execution engine, the performance problem may be eliminated by playing pre-rendered controller layer data frames directly to individual hardware controllers. Channel data type information can be stored separately without the need to resolve through translation layers during runtime. Element updates, Filter updates, \ca{optional GUI updates} are all \ca{unnecessary} for \ca{rendering directly to the controllers}.
 
-Two steps are needed for this approach. Firstly, pre-render the sequence with precise frame interval, then playback the rendered data to the controllers as a separate process and perhaps on an entirely different platform.
+Two steps are needed for this approach. \ca{The sequence must be pre-rendered} with precise frame interval, then \ca{the rendered data must be played back} to the controllers as a separate process\ca{, possibly} on an entirely different platform.
 
-To pre-render the sequence, two different methods are possible. A dummy controller can be used for runtime data dumping, or use a separate export engine with manual frame control independent of wall-clock time.
+To pre-render the sequence, two different methods are possible. A dummy controller can be used for runtime data dumping, or a separate export engine with manual frame control independent of wall-clock time \ca{can be used}. \ca{Both of these methods were tested. Although a custom controller fit more naturally and requires less modification to the existing structure, it cannot give the indication of sequence start, end and information about other controllers. More importantly, it can have unstable frame rates influenced by CPU usage. A high performance computer is required for near prefect pre-rendering by controller dumping. Therefore, the existing sequence export function from sequence editor was used instead.}
 
 \section{Custom controller}
 \label{sec:tcplinky}
 
-A custom controller module (\texttt{TCPLinky}) was developed based on one of its existing controller (\texttt{BlinkyLinky}). This controller uses TCP connection to transfer display channel data, supports up to 65535 channels. A corresponding cross-platform server application that simulates a multi-channel display was also developed using C++ with Qt \cite{qt} and OpenGL \cite{shreiner2009opengl} rendering. This server application allows real-time debugging of display output without the need of a complex physical lighting system setup. Data dumping, performance and statistical analysis can also be easily achieved. \wn{4}
+A custom controller module (\texttt{TCPLinky}) was developed based on one of \ca{Vixen's} existing \ca{controllers} (\texttt{BlinkyLinky}). This controller uses TCP connection to transfer display channel data, \ca{and} supports up to 65535 channels. A corresponding cross-platform server application that simulates a multi-channel display was also developed using C++ with Qt \cite{qt} and OpenGL \cite{shreiner2009opengl} rendering. \ca{This combination of programming language and GUI libraries enables fast packet decoding and GPU acceleration for display interface,} allows real-time \ca{simulation of numerous display output channels} without the need \ca{for} a complex physical lighting system setup. Data dumping, performance and statistical analysis can also be easily achieved.
 
-\fref{fig:tcplinky_server} shows a screenshot of the server application. With the help of GPU rendering through OpenGL, it consumes less than $3 \%$ of CPU time under 50 fps refresh rate, which is negligible. It can also be compiled and executed on other computers, simulates real world network connected controller scenarios.
+\fref{fig:tcplinky_server} shows a screenshot of the server application. \cad{With the help of GPU...} \ca{On the Windows-based testing platform,} it consumes less than $3 \%$ of CPU time under 50 fps refresh rate, which is negligible. It \ca{was also} compiled and executed on other computers \ca{to simulate real-world} network connected controller scenarios. \ca{For  all performance tests performed in this project, this server application was running on a platform different to the platform under test, in order to reduce undesired impact of performance and simulate controller connection.}
 
 \begin{figure}[t]
   \centering
@@ -83,13 +77,13 @@ A custom controller module (\texttt{TCPLinky}) was developed based on one of its
   \label{fig:tcplinky_server}
 \end{figure}
 
-The reference controller implementation \texttt{BlinkyLinky} skips sending data packets when no data change was detected. However, this is not desired for performance analysis. Therefore, this mechanism was bypassed by the \texttt{TCPLinky} controller. Data packets will be sent regardless of whether data changes detected or not.
+The reference controller implementation \texttt{BlinkyLinky} skips sending data packets when no data change \ca{is} detected. However, this is not desired for performance analysis. Therefore, this mechanism was bypassed by the \texttt{TCPLinky} controller. Data packets will be sent regardless of whether data changes \ca{are} detected or not.
 
-\section{Export sequence}
+\section{\ca{Sequence exporting}}
 
-Although the custom controller module is capable of dumping outputs, it can not give the indication of sequence start, end and information about other controllers. More notably, it can have unstable frame rates influenced by CPU usage. A high performance computer is needed for near prefect pre-rendering by controller dump. Therefore, the existing sequence export function from sequence editor was used instead.
+\cad{Although the custom controller module is capable of...}
 
-The export function was originally used to convert the lighting sequence to formats recognisable by other controller specific applications. It renders the sequence using a manual timing source stepped after each frame, gives accurate constant data dump intervals. It can also write all controller channel mapping information to a separate XML file. An example XML file is shown by \lref{lst:network_xml}.
+\ca{The existing sequence export function from sequence editor} was originally used to convert the lighting sequence to formats recognisable by other controller specific applications. It renders the sequence using a manual timing source stepped after each frame, \ca{giving} accurate constant data dump intervals. It can also write all controller channel mapping information to a separate XML file. An example XML file is shown \ca{in} \lref{lst:network_xml}.
 
 \begin{lstlisting}[float,floatplacement=ht,language=XML,label=lst:network_xml,captionpos=b,caption={\footnotesize Example controller mapping XML file}]
 <?xml version="1.0" encoding="utf-8"?>
@@ -117,7 +111,7 @@ The export function was originally used to convert the lighting sequence to form
 </Vixen3_Export>
 \end{lstlisting}
 
-To support the purposed optimised playback engine, audio media file path was added to the XML. The export dialog window was modified to allow custom frame resolution through text input, instead of a few pre-defined fixed values on the drop down list, as shown by \fref{fig:vixen_export}. Additional data format entries such as the ``Raw File"" for the playback engine was also added to the export wizard. This ``Raw'' format is a simple sequential concatenation of frames, where each frame compose of a 6-byte header, 2-byte channel count and followed by continuous channel data.
+To support the \ca{proposed} optimised playback engine, audio media file path was added to the XML. The export dialog window was modified to allow custom frame resolution through text input, instead of a few pre-defined fixed values on the drop down list, as shown \ca{in} \fref{fig:vixen_export}. \ca{An additional} data format \ca{entry named ``Raw File''} for the playback engine was also added to the export wizard. This ``Raw'' format is a simple sequential concatenation of frames, where each frame \ca{comprises} of 6-byte header, 2-byte channel count and \ca{is} followed by continuous channel data.
 
 \begin{figure}[t]
   \centering
@@ -130,10 +124,10 @@ To support the purposed optimised playback engine, audio media file path was add
 
 All source code related to Vixen and other programs developed in this project were managed using git version control tool \cite{git}, hosted on GitHub \cite{github} \cite{github_vixen_yz} \cite{github_project}.
 
-Using a version control system enables history changes tracking for source code. Together with a web-based hosting service like GitHub, changes to the source code can be easily backup and synchronised on multiple devices and the cloud. The source code for official Vixen application was also hosted on GitHub \cite{github_vixen}. With GitHub's signature fork and pull request functionality, straightforward cooperation between different organisations and people can be achieved. The modifications made in this project can be therefore easily incorporated into the official Vixen application source code repository for public use.
+Using a version control system enables history changes tracking for source code. Together with a web-based hosting service like GitHub, changes to the source code can be easily \ca{backed up} and synchronised on multiple devices and the cloud. The source code for official Vixen application was also hosted on GitHub \cite{github_vixen}. With GitHub's signature fork and pull request functionality, straightforward cooperation between different organisations and people can be achieved. The modifications made in this project can be therefore easily incorporated into the official Vixen application source code repository for public use.
 
 \section{Process management}
 
-Makefiles \cite{make} were used throughout the project for automated processing and testing. Varies text and data processing tools such as grep \cite{grep}, sed \cite{sed} and R \cite{r_project} were also used with Makefiles for automated data collection and reshaping.
+Makefiles \cite{make} were used throughout the project for automated processing and testing. \ca{Various} text and data processing tools such as grep \cite{grep}, sed \cite{sed} and R \cite{r_project} were also used with Makefiles for automated data collection and reshaping.
 
-\lref{lst:makefile} shows one example Makefile used for automated performance tests. Using this Makefile, following inputs will be tested sequentially with the optimised Vixen console application: raw sequence dump, \texttt{rgb24} encoded video with audio, \texttt{rgb24} video without audio, \texttt{yuv444p} encoded video without audio and \texttt{yuv420} encoded video without audio.
+\lref{lst:makefile} shows one example Makefile used for automated performance tests. Using this Makefile, \ca{the} following inputs will be tested sequentially with the optimised Vixen console application: raw sequence dump, \texttt{rgb24} encoded video with audio, \texttt{rgb24} video without audio, \texttt{yuv444p} encoded video without audio and \texttt{yuv420} encoded video without audio.
