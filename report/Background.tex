@@ -94,7 +94,7 @@ Multiple \ca{Linux-based} systems with a variety of resource configurations, ran
   \centering
   \begin{tabular}{l|l|l|l|l}
     \hline
-    \textbf{Name} & \textbf{Architecture} & \textbf{CPU} & \textbf{Specification} & \textbf{RAM} \\
+    \textbf{Name} & \textbf{Architecture} & \textbf{CPU} & \textbf{Specification} & \textbf{RAM} \\ \hline
     \hline
     NAS         & x86\_64 & AMD FX-8350       & 8 cores @ 4.0 GHz  & 16 GiB   \\ \hline
     Jetson TX2  & aarch64 & NVIDIA Tegra X2   & 6 cores @ 2.0 GHz  & 8 GiB    \\ \hline
@@ -131,7 +131,7 @@ Virtual machine emulation using qemu was possible on all testing platforms. Howe
 
 The overhead of running another operating system can be eliminated by using runtime emulators such as wine. However, runtime emulators require x86 platforms for running the x86 based Vixen application, \ca{which is} not possible on \ca{ARM-based} embedded platforms.
 
-The only \ca{feasible} solution was to \ca{use} the mono project runtime implementation. \ca{The} mono project is an up-to-date open source implementation of Microsoft .NET framework using C\#. It can translate executables developed using .NET framework directly to the host platform architecture during runtime, with techniques including Just-in-time (JIT) \ca{compilation}. The functionalities of the executable will be JIT compiled as native code for the host. With the help of other native libraries, the overhead of using mono will be insignificant. \ca{Furthermore}, mono project is available to a variety of processor architectures, including ARM and MIPS embedded platforms. Having Vixen running on an embedded platform can give greater flexibility \ca{than a heavy desktop computer or laptop}.
+The only \ca{feasible} solution was to \ca{use} the mono project runtime implementation. \ca{The} mono project is an up-to-date open source implementation of Microsoft .NET framework using C\#. It can translate executables developed using .NET framework directly to the host platform architecture during runtime, with techniques including Just-in-time (JIT) \ca{compilation}. The functionalities of the executable will be JIT compiled as native code for the host. With the help of other native libraries, the overhead of using mono \ca{runtime} will be insignificant. \ca{Furthermore}, mono project is available to a variety of processor architectures, including ARM and MIPS embedded platforms. Having Vixen running on an embedded platform can give greater flexibility \ca{than a heavy desktop computer or laptop}.
 
 \section{Codec libraries}
 
@@ -141,13 +141,13 @@ For cross-platform support, an open source implementation would be more suitable
 
 \ca{The \texttt{ffmpeg} framework is originally licensed under the GNU LGPL \cite{lgpl}. However, because several other optional parts that are covered by the GNU GPL \cite{gpl} were incorporated into the \texttt{ffmpeg} framework and were used in this project, especially the \texttt{libx264} library \cite{libx264} for \texttt{h264} encoding, the GPL applies to all of \texttt{ffmpeg}. Fortunately, because the Vixen application itself is open sourced and the library binaries \ca{were} used directly without modification to the source code, this should not \ca{violate} GPL compliance.}
 
-The \texttt{ffmpeg} framework consists of several individual libraries that \cite{were used together in} this project, as listed in \tref{tbl:ffmpeg}.
+The \texttt{ffmpeg} framework consists of several individual libraries that \ca{were used together in} this project, as listed in \tref{tbl:ffmpeg}.
 
 \begin{table}[t]
   \centering
   \begin{tabular}{l|l}
     \hline
-    \textbf{Name} & \textbf{Description} \\
+    \textbf{Name} & \textbf{Description} \\ \hline
     \hline
     libavcodec & Encoding/decoding library  \\ \hline
     libavfilter & Graph-based frame editing library \\ \hline
