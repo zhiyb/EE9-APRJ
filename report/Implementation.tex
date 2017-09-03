@@ -1,4 +1,4 @@
-\chapter{\ca{Implementation}}
+\ca{\chapter{Implementation}}
 \renewcommand{\baselinestretch}{\mystretch}
 \label{chap:Impl}
 %\setlength{\parindent}{0pt}
@@ -47,7 +47,7 @@ With this program, the \ca{ideal} performance \ca{of the new playback engine} on
 
 \section{Playback engine}
 
-\section{Implementation}
+\subsection{Implementation}
 
 After \ca{verifying} the ability \ca{to load and render} the exported lighting \ca{sequences} by controller specific \ca{applications}, the C\# code for loading exported sequence \ca{from \texttt{VixenLinky}} was integrated into Vixen application as a separate playback engine.
 
@@ -63,7 +63,7 @@ The structure of update management was also changed. \ca{In the original executi
 
 One major drawback of using the playback engine is that the \ca{exported} data cannot be mapped back to element states yet\ca{, which is essentially the reverse of export}. Therefore, editing the \ca{exported} sequence using the built-in editor and the preview output were not supported.
 
-\section{Integration}
+\subsection{Integration}
 
 A simple control dialog was added as a menu entry for the \ca{new playback} engine, as shown by \fref{fig:vixen_playback}. More complex and user-friendly UI design is possible, however, due to limited time \ca{constraints} this control dialog should be sufficient for this project and proof of concept.
 
@@ -74,9 +74,9 @@ A simple control dialog was added as a menu entry for the \ca{new playback} engi
   \label{fig:vixen_playback}
 \end{figure}
 
-The playback control was also integrated \ca{as a new type of action into the} built-in schedulers. It can therefore be scheduled to execute at specific \ca{times with different sequences}, possibly \ca{together with other existing actions including} schedules using the original execution engine. The new playback engine does not need additional pre-process for show schedules, \ca{thus} can be directly started within seconds.
+The playback control was also integrated \ca{as a new type of action into the} built-in schedulers. It can therefore be scheduled to execute at specific \ca{times with different sequences}, possibly \ca{together with other existing actions including} schedules using the original execution engine. The new playback engine does not need additional pre-process for show schedules, \ca{and} can be directly started within seconds.
 
-\section{Performance}
+\subsection{Performance}
 
 \fref{fig:playback} shows the performance of the \ca{new} playback engine \ca{on the same Microsoft Windows-based platform} using \ca{an exported} ``Raw'' sequence. At the first and the last few seconds, the playback engine stopped, the original execution engine was used instead during idle state. However, the execution engine still uses around $30 \%$ of CPU time during idle. But as soon as playback started, CPU usages drops to around $6 \%$ with stable refresh frame rates.
 
@@ -86,3 +86,63 @@ The playback control was also integrated \ca{as a new type of action into the} b
   \caption{\footnotesize Performance of the new playback engine on Microsoft Windows}
   \label{fig:playback}
 \end{figure}
+
+\section{Console application}
+
+\subsection{Implementation}
+
+\ca{To improve the usability of the new playback engine on Linux-based platforms especially embedded platforms, a} Command-line User Interface (CUI) version of Vixen, named \texttt{VixenConsole}, was implemented. It is easier to operate and manage a CUI based program through remote connection \ca{and automated scripts} instead of a distorted partially functional GUI application \ca{on Linux}. \cref{chap:Guide} \ca{lists} the detailed usage description of \texttt{VixenConsole}.
+
+\ca{Different from the reference implementation \texttt{VixenLinky} that only supports the \texttt{TCPLinky} controller, this \texttt{VixenConsole} application is a simplified version of the Vixen GUI application, supports all controller modules the Vixen GUI application supports.}
+
+The original core codebase from \texttt{Vixen.dll} was used in this program with some necessary modifications. Instead of full initialisation from Vixen GUI application, only \ca{available controllers modules and their configurations} will be \ca{loaded during start-up by} \texttt{VixenConsole} to reduce overheads. In this way, the code for the playback engine, module and data loading is \cad{still} shared with the Vixen GUI application, \ca{can also receive} future improvements and patches.
+
+\texttt{VixenConsole} reads configurations from the same location as Vixen application, the \texttt{Vixen 3} folder from user home directory. All configurations are stored as XML files, exported directly from settings object using XML serialiser. The ability to list available controllers and their configurations \ca{was} added to \texttt{VixenConsole}. However, configuration modification was not yet possible from \texttt{VixenConsole}, due to the complexity of supporting every \ca{possible} types of configuration fields within the project time constraint. To create or modify the configuration, the Vixen GUI application can be used from a computer running Microsoft Windows. Editing the XML configuration files directly using text editors is also possible.
+
+The \texttt{FMOD} plugin used by the Vixen GUI application was outdated, \ca{and} no longer available for download.
+
+\cmt{Therefore, audio playback using the ``Raw'' sequence was unsupported by \texttt{VixenConsole}.}
+
+\ca{
+The \texttt{VixenConsole} application does not have a build-in show scheduler. Instead, existing job scheduler utilities such as \texttt{crontab} \cite{crontab} can be used, since the \texttt{VixenConsole} application with the new playback engine does not have a pre-rendering step, therefore can be started within a reasonable amount of time. Together with the help of Linux shell scripting, this way of scheduling can be much more flexible than a fixed time scheduler. To reduce start-up time, back-to-back playback of multiple sequences were also supported.
+}
+
+\subsection{Loading performance}
+
+On an embedded platform with limited computation power, the loading time of \texttt{VixenConsole} and all controller modules can take a significant time. The implemented \texttt{tidy} operation can reduce a small portion of the loading time, by remove unused settings for elements and filters\ca{, which} also reduces the size of XML \ca{configuration files}.
+
+However, it still takes \ca{about 30 seconds} from starting \texttt{VixenConsole} to \ca{be able to render} on the \ca{Raspberry Pi B+} platform\ca{, in contract to only 5 seconds on the Raspberry Pi 3B platform}. This loading time is for the mono runtime to preform some necessary tasks such as dynamic \ca{recompilation}, \ca{and is} unavoidable.
+
+\subsection{Execution performance}
+
+\fref{fig:raw-seq-p-c} compares the performance between \texttt{VixenLinky} and \texttt{VixenConsole} on multiple platforms. The performance comparison was done by \ca{unlimiting} the playback and controller refresh rate separately using both \texttt{VixenLinky} and \texttt{VixenConsole} applications\ca{;} a total of \ca{four} tests on each of the platforms. The refresh rate data over the entire sequence time \ca{is} then summarised \ca{using} a five-number summary representation, i.e. sample minimum, lower quartile, median, upper quartile and sample maximum. The mean values were also plotted as points. The refresh rate axis is log scale, to focus on the lower performance figures over all platforms.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.9\textwidth]{Figs/raw-seq-p-c.eps}
+  \caption{\footnotesize Performance comparison between \texttt{VixenLinky} and \texttt{VixenConsole}}
+  \label{fig:raw-seq-p-c}
+\end{figure}
+
+By separating playback and controller update tests, the two major performance limitation factors of file IO and processing power can be separately tested.
+
+The figure shows \ca{that} \texttt{VixenConsole} runs a few times slower than the minimal implementation \texttt{VixenLinky}. On NP1380, the controller refresh rate drops below 10 fps, unusable for a 50 fps sequence. It still performs adequately on Raspberry Pi B+\ca{;} both the maximum possible playback and controller refresh rate were significantly higher than 50 fps.
+
+The mono profiler was used in an attempt to determine the most time consuming code segment on Raspberry Pi B+ platform. However, it was not particularly \ca{successful}. As shown by \lref{lst:mono_sample}, \ca{there are not any significant performance optimisation opportunities available. The} thread sleeping method, \ca{IO read} methods and update methods are all \ca{mandatory and} just as expected. Some overheads from copying command arrays do show up on the summary as array coping functions, but they are \ca{not significant, also} unavoidable for controller module interface compatibility.
+
+\cmt{\texttt{WaitOne} is the problem}
+
+\begin{lstlisting}[float,floatplacement=ht,language=,label=lst:mono_sample,captionpos=b,caption={\footnotesize Summary of time spent in each method, collected by mono profiler}]
+Method call summary
+Self(ms) Method name
+ 584540 System.Threading.Thread:SleepInternal (int)
+ 520043 System.IO.InotifyWatcher:ReadFromFD (intptr,byte[],intptr)
+ 410638 System.Threading.WaitHandle:WaitOne_internal (intptr,int)
+  63712 Vixen.Sys.Playback:ReadFrame ()
+  56368 VixenModules.Output.TCPLinky.TCPLinky:UpdateState (int,Vixen.Commands.ICommand[])
+  18617 System.IO.MonoIO:Read (intptr,byte[],int,int,System.IO.MonoIOError&)
+  16052 object:__icall_wrapper_ves_icall_array_new_specific (intptr,int)
+  12287 System.Array:FastCopy (System.Array,int,System.Array,int,int)
+  11344 System.Net.Sockets.Socket:Send_internal (intptr,byte[],int,int,System.Net.Sockets.SocketFlags,int&,bool)
+   7274 System.Runtime.CompilerServices.RuntimeHelpers:SufficientExecutionStack ()
+\end{lstlisting}

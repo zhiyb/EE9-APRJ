@@ -189,7 +189,3 @@ In addition to profilers provided by the platform, performance profiling was als
 The original profiler with Vixen uses the \texttt{Process} class provided by Microsoft Windows runtime for CPU usage measurements. However, it was not completely available under mono runtime. A different profiling method would be required for Linux.
 
 On Linux, there are statistic files in the proc file system \cite{proc} provided by the kernel. Per-process information about CPU jiffies \ca{(time unit defined by the interval of system timer) and} disk I/O statistics are available by reading corresponding files.
-
-\cmt{More information about the proc file system?}
-
-\cmt{Performance comparison methods between multiple platforms, benchmark tools}

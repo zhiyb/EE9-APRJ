@@ -3,13 +3,18 @@
 \label{chap:Eval}
 %\setlength{\parindent}{0pt}
 
-\section{\ca{Example sequences}}
+\ca{\section{Example sequences}}
 
 \PARstart{\ca{A}}{} \ca{%
-few existing sequence designs used for past lighting shows were available for use as example inputs. They all share the same set of output controller configuration. The longest sequence with a mixture of slow and rapid changing effects was used for all subsequent performance analysis, to represent an average complexity of lighting show designs. This sequence lasts for 6 minutes and 49 seconds, has 2900 elements and 8452 output channels.
+few existing sequence designs used for past lighting shows were available for use as example inputs. They all share the same set of output controller configuration. The longest sequence with a mixture of slow and rapid changing effects was used for all subsequent performance analysis, to represent an average complexity of lighting show designs. \fref{fig:diff} shows the complexity of this test sequence, plotted by averaging the percentage difference between two continuous frames every one second. This sequence lasts for 6 minutes and 49 seconds, has 2900 elements and 8452 output channels.
 }
 
-\cmt{Frame difference percentage line chart?}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.8\columnwidth]{Figs/diff.eps}
+  \caption{\footnotesize Frame difference of the test sequence averaged every one second}
+  \label{fig:diff}
+\end{figure}
 
 \section{Original performance}
 
@@ -17,14 +22,14 @@ The original Vixen application already has \ca{a} built-in instrumentation displ
 
 The Vixen application uses a separate thread for each task. It has the main GUI thread for editor, a preview rendering thread and multiple dedicated threads for active controllers. This multi-threading structure can take advantage of modern multi-core multi-thread processors. However, performance on a single core machine can be poor due to context switching. Mutex locks are also required to resolve potential data access conflict, further \ca{increasing} the overhead.
 
-\fref{fig:original} shows the performance of the original Vixen execution engine \ca{on the Microsoft Windows-based platform}. The CPU usage frequently \ca{reached} above $90 \%$, while the refresh rate \ca{was} very unstable around the configured 20 fps. Especially \ca{during} the first 60 seconds, the refresh rate \ca{dropped} to 5 fps while trying to keep up with element updates. At the same time, the CPU usage was \ca{around} $50 \%$. On a dual-core machine, this implies one of the cores was running at full load while the other one was mostly idle.
-
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.8\columnwidth]{original}
   \caption{\footnotesize Performance of original Vixen execution engine}
   \label{fig:original}
 \end{figure}
+
+\fref{fig:original} shows the performance of the original Vixen execution engine \ca{on the Microsoft Windows-based platform}. The CPU usage frequently \ca{reached} above $90 \%$ \ca{when the sequence complexity increases}, while the refresh rate \ca{was} very unstable around the configured 20 fps. Especially \ca{during} the first 60 seconds, the refresh rate \ca{dropped} to 5 fps while trying to keep up with element updates. At the same time, the CPU usage was \ca{around} $50 \%$. On a dual-core machine, this implies one of the cores was running at full load while the other one was mostly idle.
 
 Further analysis using Microsoft Visual Studio's sampling profiler shows, around $24.7 \%$ of total CPU time was \ca{spent} between translation layers for generating controller commands (\texttt{GenerateCommand}), while the actual command assignment (\texttt{\_8BitEvaluator}) \ca{took} less than $0.5 \%$ of CPU time, as shown \ca{in} \fref{fig:vixen_perf_original} \ca{call tree} analysis. Another $23.0 \%$ CPU time was used for filter and element updates, $26.0 \%$ for preview rendering and $16.9 \%$ for the sequence editor, as shown \ca{in} \fref{fig:vixen_perf_original_overview}. The CPU time used for controller updates \ca{was} almost negligible.
 
@@ -61,7 +66,7 @@ The implementation of \ca{the} preview display was also very inefficient, \ca{us
 
 It \ca{took} some necessary modifications for Vixen to run on Linux using mono runtime. The MonoDevelop IDE \cite{monodevelop} \ca{helped} by directly supporting Microsoft Visual Studio projects. However, C/C++ projects were not supported, and pre-built dynamic runtime libraries developed using C/C++ for Microsoft Windows were also not support by mono. All code references to WPF and FMOD audio \ca{had to be} removed for the project to build and run.
 
-The \ca{resulting} Vixen application for Linux has a distorted main GUI with unreasonably long vertical window size. The sequence editor, display setup and preview would either not load or crash the entire application. Fortunately, all controller modules \ca{could} be loaded and the core execution engine and controller update threads were working properly. \fref{fig:vixen_linux_main} shows some loaded controller modules and partially working GUI.
+The \ca{resulting} Vixen application for Linux has a distorted main GUI with unreasonably long vertical window size. The sequence editor, display setup and preview would either not load or crash the entire application. Fortunately, all controller modules \ca{as unmodified DLLs could} be loaded\ca{;} the core execution engine and controller update threads were \ca{also} working properly. \fref{fig:vixen_linux_main} shows some loaded controller modules and partially working GUI.
 
 \begin{figure}[t]
   \centering
@@ -98,7 +103,7 @@ The reference controller implementation \texttt{BlinkyLinky} skips sending data 
 
 \ca{To avoid losing configurations of previously defined controllers, this controller was patched in parallel with existing controllers. This resulted in a duplication of channels in the exported sequences, as different controllers map to different frame data segments.}
 
-\section{\ca{Sequence exporting}}
+\ca{\section{Sequence exporting}}
 
 \cad{Although the custom controller module is capable of...}
 
