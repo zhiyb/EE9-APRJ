@@ -57,9 +57,16 @@ The playback engine starts by reading the exported network XML file. To simplify
 
 All preview, element and filter updates were skipped in the playback engine. The translation layers were skipped, since the sequence data is already specific to the controllers. However, in order to match the existing interface of controller modules, \ca{segments of sequence data frame buffer} still need to be copied again \ca{as command batches for each controllers}, incurring some unnecessary overhead.
 
-The structure of update management was also changed. \ca{In the original execution engine}, the application updates \ca{data buffers} from \ca{controller update requests}, which requires the use of mutex \ca{locks to coordinate} data \ca{accesses} between controller threads. With a configuration \ca{consists} of multiple controllers, potential lock contention of the mutex can also incur some overhead. \ca{To address this issue, another} thread dedicated to sequence loading was \ca{added} to the playback engine, similar to the structure of controller specific implementations. In this way, only the sequence loading thread may update the channel data buffer, \ca{removing} the need of mutex \ca{locks}.
+The structure of update management was also changed\ca{, as illustrated in \fref{fig:update}}. \ca{In the original execution engine}, the application updates \ca{data buffers} from \ca{controller update requests}, which requires the use of mutex \ca{locks to coordinate} data \ca{accesses} between controller threads. With a configuration \ca{consists} of multiple controllers, potential lock contention of the mutex can also incur some overhead. \ca{To address this issue, another} thread dedicated to sequence loading was \ca{added} to the playback engine, similar to the structure of controller specific implementations. In this way, only the sequence loading thread may update the channel data buffer, \ca{removing} the need of mutex \ca{locks}.
 
-\cmt{Add graph to explain the change}
+\begin{figure*}[t]
+  \centering
+  \subfloat[Execution engine]{\frame{\includegraphics[height=4cm]{Figs/update_execution.eps}}}
+  \hfil
+  \subfloat[Playback engine]{\frame{\includegraphics[height=4cm]{Figs/update_playback.eps}}}
+  \caption{\footnotesize Update management of Vixen engines}
+  \label{fig:update}
+\end{figure*}
 
 One major drawback of using the playback engine is that the \ca{exported} data cannot be mapped back to element states yet\ca{, which is essentially the reverse of export}. Therefore, editing the \ca{exported} sequence using the built-in editor and the preview output were not supported.
 
