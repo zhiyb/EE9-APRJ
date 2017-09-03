@@ -32,7 +32,13 @@ A GUI application dedicated to the \texttt{TCPLinky} controller was developed us
 
 \section{Minimal C\# implementation}
 
-To set up a reference baseline for optimal performance, sequence rendering application \ca{named \texttt{VixenLinky} was developed. It was implemented using C\#, takes} the same \ca{``Raw''} sequence data \ca{format}, but \ca{supports} only the \texttt{TCPLinky} controller developed in \sref{sec:tcplinky}. \ca{It was} implemented as \ca{simply} as possible without all intermediate layers \ca{and module loading routines}, but still \ca{using} a threading structure \ca{identical to} the original Vixen application. \ca{The source code for controlling the \texttt{TCPLinky} controller} was ported directly from the original Vixen application \ca{to ensure compatibility and similarity}.
+To set up a reference baseline for optimal performance \ca{of the new playback engine}, sequence rendering application \ca{named \texttt{VixenLinky} was developed.}
+
+\ca{\subsection{Implementation}}
+
+\ca{\texttt{VixenLinky} was implemented using C\#, takes} the same \ca{``Raw''} sequence data \ca{format}, but \ca{supports} only the \texttt{TCPLinky} controller developed in \sref{sec:tcplinky}. \ca{It was} implemented as \ca{simply} as possible without all intermediate layers \ca{and module loading routines}, but still \ca{using} a threading structure \ca{identical to} the original Vixen application. \ca{The source code for controlling the \texttt{TCPLinky} controller} was ported directly from the original Vixen application \ca{to ensure compatibility and similarity}.
+
+\ca{\subsection{Purpose}}
 
 With this program, the \ca{ideal} performance \ca{of the new playback engine} on each platform can be measured. The \ca{remaining performance limitation factors are} sequence loading performance and controller update speed. Therefore, options to unlimit the update interval of both sequence loading and controller update were added separately \ca{for the measurements of maximum update rates}.
 
@@ -47,11 +53,9 @@ With this program, the \ca{ideal} performance \ca{of the new playback engine} on
 
 \section{Playback engine}
 
-\subsection{Implementation}
-
 After \ca{verifying} the ability \ca{to load and render} the exported lighting \ca{sequences} by controller specific \ca{applications}, the C\# code for loading exported sequence \ca{from \texttt{VixenLinky}} was integrated into Vixen application as a separate playback engine.
 
-Several code branches were added to switch between the original execution engine and the new playback engine. The execution engine was still used as the default engine to simplify status checking and support the sequence editor. The playback engine will be switched to \ca{only if an exported sequence was loaded to it and started rendering}.
+\subsection{Implementation}
 
 The playback engine starts by reading the exported network XML file. To simplify the process, \ca{an} XML object serialiser was used to interpret \ca{and store} the XML \ca{data structure} to a similarly structured C\# object for later access. The information \ca{read} from XML will be used to determine controller channel mapping, update interval and optional audio media file. To further reduce \ca{matching} overhead, the controller names will be looked up and converted to their unique ID (GUID) \ca{instead}. The optional audio media file was supported by utilising the same audio media functions from original execution engine.
 
@@ -72,6 +76,8 @@ One major drawback of using the playback engine is that the \ca{exported} data c
 
 \subsection{Integration}
 
+Several code branches were added to switch between the original execution engine and the new playback engine. The execution engine was still used as the default engine to simplify status checking and support the sequence editor. The playback engine will be switched to \ca{only if an exported sequence was loaded to it and started rendering}.
+
 A simple control dialog was added as a menu entry for the \ca{new playback} engine, as shown \ca{in} \fref{fig:vixen_playback}. More complex and user-friendly UI design is possible, however, due to limited time \ca{constraints} this control dialog should be sufficient for this project and proof of concept.
 
 \begin{figure}[t]
@@ -83,70 +89,23 @@ A simple control dialog was added as a menu entry for the \ca{new playback} engi
 
 The playback control was also integrated \ca{as a new type of action into the} built-in schedulers. It can therefore be scheduled to execute at specific \ca{times with different sequences}, possibly \ca{together with other existing actions including} schedules using the original execution engine. The new playback engine does not need additional pre-process for show schedules, \ca{and} can be directly started within seconds.
 
-\subsection{Performance}
-
-\fref{fig:playback} shows the performance of the \ca{new} playback engine \ca{on the same Microsoft Windows-based platform} using \ca{an exported} ``Raw'' sequence. At the first and the last few seconds, the playback engine stopped, the original execution engine was used instead during idle state. However, the execution engine still uses around $30 \%$ of CPU time during idle. But as soon as playback started, CPU usages drops to around $6 \%$ with stable refresh frame rates.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.8\columnwidth]{Figs/playback.eps}
-  \caption{\footnotesize Performance of the new playback engine on Microsoft Windows}
-  \label{fig:playback}
-\end{figure}
-
 \section{Console application}
-
-\subsection{Implementation}
 
 \ca{To improve the usability of the new playback engine on Linux-based platforms especially embedded platforms, a} Command-line User Interface (CUI) version of Vixen, named \texttt{VixenConsole}, was implemented. It is easier to operate and manage a CUI based program through remote connection \ca{and automated scripts} instead of a distorted partially functional GUI application \ca{on Linux}. \cref{chap:Guide} \ca{lists} the detailed usage description of \texttt{VixenConsole}.
 
 \ca{Different from the reference implementation \texttt{VixenLinky} that only supports the \texttt{TCPLinky} controller, this \texttt{VixenConsole} application is a simplified version of the Vixen GUI application, supports all controller modules the Vixen GUI application supports.}
 
+\ca{\subsection{Implementation}}
+
 The original core codebase from \texttt{Vixen.dll} was used in this program with some necessary modifications. Instead of full initialisation from Vixen GUI application, only \ca{available controllers modules and their configurations} will be \ca{loaded during start-up by} \texttt{VixenConsole} to reduce overheads. In this way, the code for the playback engine, module and data loading is \cad{still} shared with the Vixen GUI application, \ca{can also receive} future improvements and patches.
 
 \texttt{VixenConsole} reads configurations from the same location as Vixen application, the \texttt{Vixen 3} folder from user home directory. All configurations are stored as XML files, exported directly from settings object using XML serialiser. The ability to list available controllers and their configurations \ca{was} added to \texttt{VixenConsole}. However, configuration modification was not yet possible from \texttt{VixenConsole}, due to the complexity of supporting every \ca{possible} types of configuration fields within the project time constraint. To create or modify the configuration, the Vixen GUI application can be used from a computer running Microsoft Windows. Editing the XML configuration files directly using text editors is also possible.
 
+\ca{\subsection{Scheduling}}
+
 \ca{
 The \texttt{VixenConsole} application does not have a build-in show scheduler. Instead, existing job scheduler utilities such as \texttt{crontab} \cite{crontab} can be used, since the \texttt{VixenConsole} application with the new playback engine does not have a pre-rendering step, therefore can be started within a reasonable amount of time. Together with the help of Linux shell scripting, this way of scheduling can be much more flexible than a fixed time scheduler. To reduce start-up time, back-to-back playback of multiple sequences were also supported.
 }
-
-\subsection{Loading performance}
-
-On an embedded platform with limited \ca{computational} power, the loading time of \texttt{VixenConsole} and all controller modules can take a significant time. The implemented \texttt{tidy} operation can reduce a small portion of the loading time, by remove unused settings for elements and filters\ca{, which} also reduces the size of XML \ca{configuration files}.
-
-However, it still takes \ca{about 30 seconds} from starting \texttt{VixenConsole} to \ca{be able to render} on the \ca{Raspberry Pi B+} platform\ca{, in contract to only 5 seconds on the Raspberry Pi 3B platform}. This loading time is for the mono runtime to preform some necessary tasks such as dynamic \ca{recompilation}, \ca{and is} unavoidable.
-
-\subsection{Execution performance}
-
-\fref{fig:raw-seq-p-c} compares the performance between \texttt{VixenLinky} and \texttt{VixenConsole} on multiple platforms. The performance comparison was done by \ca{unlimiting} the playback and controller refresh rate separately using both \texttt{VixenLinky} and \texttt{VixenConsole} applications\ca{;} a total of \ca{four} tests on each of the platforms. The refresh rate data over the entire sequence time \ca{is} then summarised \ca{using} a five-number summary representation, i.e. sample minimum, lower quartile, median, upper quartile and sample maximum. The mean values were also plotted as points. The refresh rate axis is log scale, to focus on the lower performance figures over all platforms.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.9\textwidth]{Figs/raw-seq-p-c.eps}
-  \caption{\footnotesize Performance comparison between \texttt{VixenLinky} and \texttt{VixenConsole}}
-  \label{fig:raw-seq-p-c}
-\end{figure}
-
-By separating playback and controller update tests, the two major performance limitation factors of file IO and processing power can be separately tested.
-
-The figure shows \ca{that} \texttt{VixenConsole} runs a few times slower than the minimal implementation \texttt{VixenLinky}. On NP1380, the controller refresh rate drops below 10 fps, unusable for a 50 fps sequence. It still performs adequately on Raspberry Pi B+\ca{;} both the maximum possible playback and controller refresh rate were significantly higher than 50 fps.
-
-The mono profiler was used in an attempt to \ca{further optimise the \texttt{VixenConsole} application} on Raspberry Pi B+ platform. However, it was not particularly \ca{successful}. As shown \ca{in} \lref{lst:mono_sample}, \ca{there are not any significant performance optimisation opportunities available. The} thread sleeping method, \ca{IO read} methods and update methods are all \ca{mandatory and} just as expected. Some overheads from copying command arrays do show up on the summary as array coping functions, but they are \ca{insignificant, also} unavoidable for controller module interface compatibility.
-
-\begin{lstlisting}[float,floatplacement=ht,language=,label=lst:mono_sample,captionpos=b,caption={\footnotesize Summary of time spent in each method, collected by mono profiler}]
-Method call summary
-Self(ms)   Calls Method name
- 584540   38673 System.Threading.Thread:SleepInternal (int)
- 520043    2604 System.IO.InotifyWatcher:ReadFromFD (intptr,byte[],intptr)
- 410638   21047 System.Threading.WaitHandle:WaitOne_internal (intptr,int)
-  63712   19119 Vixen.Sys.Playback:ReadFrame ()
-  56368   21044 VixenModules.Output.TCPLinky.TCPLinky:UpdateState (int,Vixen.Commands.ICommand[])
-  18617   41132 System.IO.MonoIO:Read (intptr,byte[],int,int,System.IO.MonoIOError&)
-  16052  114460 object:__icall_wrapper_ves_icall_array_new_specific (intptr,int)
-  12287   49221 System.Array:FastCopy (System.Array,int,System.Array,int,int)
-  11344   21044 System.Net.Sockets.Socket:Send_internal (intptr,byte[],int,int,System.Net.Sockets.SocketFlags,int&,bool)
-   7274    3020 System.Runtime.CompilerServices.RuntimeHelpers:SufficientExecutionStack ()
-\end{lstlisting}
 
 \section{Video data format}
 
@@ -160,6 +119,8 @@ The \texttt{ffmpeg} framework uses the C programming language for its API. The c
 
 The development of video integration was separated into multiple steps. Firstly, several C programs were developed to test individual video processing functions including video encoding, video decoding, stream muxing and metadata \ca{retrieval}. Afterwards, working code segments were combined into a dynamic library, with a simplified API suitable for C\#. A C\# wrapper class was then developed using the \texttt{InterOp} service \cite{interop}, together with another C\# program for testing video encoding and decoding. After all these small testing programs had been confirmed working, the C\# wrapper was finally integrated into Vixen with the playback engine. The playback engine checks for \ca{the} input file extension to determine whether to load the file as \ca{an} exported ``Raw'' sequence or \ca{a} video file.
 
+\ca{The default video encoding format for encoding exported sequences is \texttt{h264} with \texttt{rgb24} pixel format.} It is possible to add support for multiple video formats as options to the \ca{wrapper} library to directly transcode from ``Raw'' sequence to other video formats. However, this can make the encoding process \ca{and export options} over complicated. Instead, other dedicated video transcoding tools can be used for the same task. The decoding routine used in playback engine was designed to support any video encoding format, by converting the video frames to \texttt{rgb24} format internally.
+
 To ensure lossless transcoding from the ``Raw'' sequence to \ca{a} video stream, the transcoding programs were tested by encoding example sequences to \ca{videos} then decoded back to \ca{new sequences}. The \ca{new} sequences were then compared for any difference \ca{to the original sequence}, using the GNU \texttt{diff} tool \cite{diff}. Makefile was used for automated \ca{compilation} and testing.
 
 To minimise number of files needed for playback, the optional audio file was muxed together with the video stream, and the network configuration XML file was stored directly as \ca{a} string literal in \ca{a} video metadata field \ca{named} ``comment'', as shown \ca{in} \fref{fig:video-info}.
@@ -171,7 +132,9 @@ To minimise number of files needed for playback, the optional audio file was mux
   \label{fig:video-info}
 \end{figure}
 
-In the playback engine, video frames will be transformed to controller data frames for rendering. However, the existing audio rendering engine \texttt{FMOD} from Vixen only supports media file playback. The required functionality of playing decoded data frames was not available from its C\# API. To resolve this issue, C code for operating a newer version of \texttt{FMOD} was added to the wrapper library. The playback engine transfers the decoded audio frame back to the wrapper library for audio playback.
+\subsection{Rendering}
+
+In the playback engine, video frames will be transformed to controller data frames for rendering. However, the existing audio rendering engine \texttt{FMOD} from Vixen only supports media file playback. The required functionality of playing decoded \ca{audio} data frames was not available from its C\# API. To resolve this issue, C code for operating a newer version of \texttt{FMOD} was added to the wrapper library. The playback engine transfers the decoded audio frame back to the wrapper library for audio playback.
 
 The \texttt{FMOD} plugin used by the Vixen GUI application was outdated, \ca{and} no longer available for download.
 
@@ -180,103 +143,3 @@ The \texttt{FMOD} plugin used by the Vixen GUI application was outdated, \ca{and
 It is possible to support audio playback with exported ``Raw'' sequences using the newer version of \texttt{FMOD}. However, this was not implemented yet.
 
 \cmt{TODO: Implement audio playback with ``Raw'' sequence, update performance data}
-
-\subsection{Benefits and limitations}
-
-The first noticeable benefit was reduction in sequence file size. The ``Raw'' sequence format was implemented without any compression algorithm, \ca{and} always has a size linear to total sequence time and channel count. The video formats reduced the sequence size to around $\nicefrac{1}{10}$ of the ``Raw'' sequence. \tref{tbl:size} compares file sizes in different formats of the same example sequence.
-
-\begin{table}[t]
-  \centering
-  \begin{tabular}{l|l|l}
-    \hline
-    \textbf{Type} & \textbf{Sequence size} & \textbf{With audio} \\ \hline
-    \hline
-    Editable sequence                                 & 8.88 MiB  & 24.4 MiB  \\ \hline
-    \hline
-    50 fps exported \texttt{Raw} sequence             & 337 MiB   & 352 MiB   \\ \hline
-    50 fps \texttt{rgb24} encoded video (lossless)    & 26.6 MiB  & 42.5 MiB  \\ \hline
-    50 fps \texttt{yuv444p} encoded video (lossless)  & 26.6 MiB  & 42.5 MiB  \\ \hline
-    50 fps \texttt{yuv420p} encoded video (lossy)     & 18.2 MiB  & 34.1 MiB  \\ \hline
-  \end{tabular}
-  \caption{\footnotesize File size comparison of different formats}
-  \label{tbl:size}
-\end{table}
-
-Using the video format, the exported sequence, audio and configuration information are combined into a single file. This reduction of file count can sometimes simplify the management and sharing of multiple sequences. However, an unexpected limitation on metadata length was encountered on Raspberry Pis. The \texttt{libav} fork of \texttt{ffmpeg} provided by the raspbian distribution of version \texttt{jessie} has an arbitrary limitation of 1000 characters for metadata field length, not enough for all XML configuration information. To work around this issue, some inactive fields of the XML configuration was removed for Raspberry Pis. To completely remove this issue, newer version of \texttt{ffmpeg} without this limitation can be compiled for Raspberry Pis.
-
-The \texttt{yuv420p} encoded video listed in \tref{tbl:size} were transcoded from the \texttt{rgb24} encoded video using the \texttt{ffmpeg} command-line tool. It is possible to add support for multiple video formats as options to the developed video library to directly transcode from ``Raw'' sequence to other video formats. However, this can make the encoding process over complicated. Instead, other dedicated video transcoding tools can be used for the same task. The decoding routine used in playback engine was designed to support any video encoding format, by converting the video frames to \texttt{rgb24} format internally. This is another benefit of using a video file. All tools developed for general purpose video processing, editing and filtering can also be used for the exported sequences.
-
-With these sophisticated video \ca{compression} algorithms, a drop of the sequence loading speed was expected. Fortunately, the \texttt{ffmpeg} library is capable of utilising media acceleration features to speed up video decoding, such as SIMD instructions and dedicated video decoding hardware. However, a \ca{low} resolution video, such as the $76 \times 76$ video from \fref{fig:video-info}, is more than capable of supporting thousands of controller channels. It may not leverage the full advantage of dedicated high resolution hardware video decoding accelerators.
-
-\subsection{Encoding formats}
-
-\begin{figure*}[t]
-  \centering
-  \subfloat[Packed \texttt{RGB}]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-raw-scale.png}%
-  \label{fig:video-rgb}}\hfil
-  \subfloat[Packed \texttt{YUV}]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv-scale.png}%
-  \label{fig:video-yuv}}\hfil
-  \subfloat[Planar \texttt{YUV}]{\includegraphics[width=0.3\textwidth]{Figs/video/y-u-v-scale.png}%
-  \label{fig:video-yuvp}}\\
-  %\subfloat[Constant rate factor 6]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-6-scale.png}}\hfil
-  %\subfloat[Difference blend]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-6-scale-diff.png}}\hfil
-  %\subfloat[XOR blend]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-6-scale-xor.png}}\\
-  \subfloat[Constant rate factor 12]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-12-scale.png}}\hfil
-  \subfloat[Difference blend]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-12-scale-diff.png}}\hfil
-  \subfloat[XOR blend]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-12-scale-xor.png}}\\
-  \subfloat[Constant rate factor 24]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-24-scale.png}}\hfil
-  \subfloat[Difference blend]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-24-scale-diff.png}}\hfil
-  \subfloat[XOR blend]{\includegraphics[width=0.3\textwidth]{Figs/video/rgb24-24-scale-xor.png}}\\
-  %\subfloat[Constant rate factor 24]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv444p-24-scale.png}}\hfil
-  %\subfloat[Difference blend]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv444p-24-scale-diff.png}}\hfil
-  %\subfloat[XOR blend]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv444p-24-scale-xor.png}}\\
-  \subfloat[\texttt{yuv420p} encoding]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv420p-0-scale.png}%
-  \label{fig:video-420}}\hfil
-  \subfloat[Difference blend]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv420p-0-scale-diff.png}%
-  \label{fig:video-420-diff}}\hfil
-  \subfloat[XOR blend]{\includegraphics[width=0.3\textwidth]{Figs/video/yuv420p-0-scale-xor.png}%
-  \label{fig:video-420-xor}}\\
-  \caption{\footnotesize Video encoding formats comparison of frame 13850}
-  \label{fig:video-pix_fmt}
-\end{figure*}
-
-There are several possible ways to encode sequence channel data into a video pixel format. \fref{fig:video-rgb}, \ref{fig:video-yuv} and \ref{fig:video-yuvp} shows 3 different channel orders tested.
-
-For the \texttt{RGB} format, channel data was copied line-by-line into a video frame buffer with \texttt{rgb24} pixel format. The channel data fills sequentially the red, green and blue channels of continuous pixels, also called packed format.
-
-Similarly, \fref{fig:video-yuv} was encoded as packed \texttt{YUV} for comparison. However, only planar pixel format of \texttt{yuv444p} is available for video frames. The frame buffer stores an entire frame of \texttt{Y} channel first, followed by a frame of \texttt{U} and \texttt{V} channels. For the packed \texttt{YUV} format, this requires complex buffer copying routine, \ca{which} may decrease the performance.
-
-\fref{fig:video-yuvp} shows the appearance of storing channel data as planar \texttt{YUV} format \ca{instead}. Because the example sequence contains lots of \texttt{RGB} elements, pixels with similar colours were all separated by two other pixels in the planar format. This separation resulted in lots of sharp pixel boundaries, which can be badly degraded when transcoding to lower quality video settings.
-
-The second and third rows of \fref{fig:video-pix_fmt} show the quality degradation with lower quality settings using the same \texttt{rgb24} pixel format. The increase of the constant quality factor (CRF) means the video data rate will be more restricted and reduced. The frame difference of CRF 12 is hardly visible, but the \texttt{XOR} blend clearly shows there are binary differences to the reference frame.
-
-Within the 3 formats tested, \texttt{yuv420p} probably is the most common video encoding format currently. It is also more commonly supported by hardware video accelerators. However, \texttt{yuv420p} is not capable to store channel data losslessly with the same image resolution. It is more suitable for storing realistic videos, where sudden colour changes between pixels are uncritical and not common. Colour degrade and cross-talk between channels are unavoidable with the \texttt{yuv420p} encoding format, as shown by the last row of \fref{fig:video-pix_fmt}.
-
-\ca{
-\tref{tbl:video_format} compares the difference between these video encoding formats. The differences were calculated according to \eref{eq:diff}. The PSNR (Peak Signal to Noise Ratio) values were calculated using the PSNR filter from \texttt{ffmpeg}, which gives a logarithmic indication of errors between two video streams. The table shows that packed \texttt{RGB} gives the smallest file size. Therefore, \texttt{rgb24} was chosen as the optimal pixel format.
-
-\begin{equation}
-  \frac{\sum_n^{N_f} \sum_i^{N_c} \left| A_{n,i} - B_{n,i} \right|}{N_f \times N_c \times 256} \%
-  \label{eq:diff}
-\end{equation}
-Where $N_f$ is the number of frames, $N_c$ is the number of channels, $A$ and $B$ are the data from input $A$ and $B$ respectively. $256$ was chosen because all channels in the test sequence are 8-bit channels.
-}
-
-\begin{table}[t]
-  \centering
-  \begin{tabular}{l|l|l|l|l}
-    \hline
-    \textbf{Type} & \textbf{File size} & \textbf{Data rate} & \textbf{Difference} & \textbf{Average PSNR} \\ \hline
-    \hline
-    Packed \texttt{RGB} with rgb24     & 26.6 MiB  & 544 kb/s  & -         & -         \\ \hline
-    Packed \texttt{YUV} with yuv444p    & 29.5 MiB  & 604 kb/s  & -         & -         \\ \hline
-    Planar \texttt{YUV}     & 38.3 MiB  & 784 kb/s  & -         & -         \\ \hline
-    \hline
-    \texttt{rgb24} CRF 6    & 26.5 MiB  & 539 kb/s  & 0.090 \%  & 48.60     \\ \hline
-    \texttt{rgb24} CRF 12   & 20.6 MiB  & 418 kb/s  & 0.189 \%  & 44.40     \\ \hline
-    \texttt{rgb24} CRF 24   & 11.8 MiB  & 238 kb/s  & 0.683 \%  & 35.17     \\ \hline
-    \texttt{yuv420p} CRF 0  & 18.2 MiB  & 373 kb/s  & 3.323 \%  & 19.66     \\ \hline
-  \end{tabular}
-  \caption{\footnotesize Comparison between different video encoding formats}
-  \label{tbl:video_format}
-\end{table}
