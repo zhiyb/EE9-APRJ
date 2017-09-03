@@ -6,6 +6,11 @@ VA	= ~/Vixen/2016.rgb24.audio.test_enc.mp4
 V	= ~/Vixen/2016.rgb24.test_enc.mp4
 VYUV	= ~/Vixen/2016.yuv444p.test_enc.mp4
 V420	= ~/Vixen/2016.yuv420p.test_enc.mp4
+VAVI	= ~/Vixen/2016.rgb24.avi
+VMKV	= ~/Vixen/2016.rgb24.mkv
+V265R	= ~/Vixen/2016.h265.rgb24.mp4
+V265Y	= ~/Vixen/2016.h265.yuv444p.mp4
+VQT	= ~/Vixen/2016.qtrle.rgb24.mov
 
 PERF	= 500
 PERF_PB	= 100
@@ -17,7 +22,7 @@ LINKY	= mono VixenLinky.exe
 CONSOLE	= MONO_IOMAP=all mono VixenConsole.exe
 
 .PHONY: all
-all: raw seq va v vyuv v420
+all: raw seq va v vyuv v420 vmkv vavi v265rgb v265yuv vqt
 
 .PHONY: raw seq va v vyuv v420
 raw: raw-normal raw-playback raw-controller
@@ -26,6 +31,11 @@ va: va-normal va-playback va-controller
 v: v-normal v-playback v-controller
 vyuv: vyuv-normal vyuv-playback vyuv-controller
 v420: v420-normal v420-playback v420-controller
+vavi: vavi-normal vavi-playback vavi-controller
+vmkv: vmkv-normal vmkv-playback vmkv-controller
+v265rgb: v265rgb-normal v265rgb-playback v265rgb-controller
+v265yuv: v265yuv-normal v265yuv-playback v265yuv-controller
+vqt: vqt-normal vqt-playback vqt-controller
 
 raw-normal raw-playback raw-controller: $(RAW)
 seq-normal seq-playback seq-controller: $(SEQ)
@@ -33,6 +43,11 @@ va-normal va-playback va-controller: $(VA)
 v-normal v-playback v-controller: $(V)
 vyuv-normal vyuv-playback vyuv-controller: $(VYUV)
 v420-normal v420-playback v420-controller: $(V420)
+vavi-normal vavi-playback vavi-controller: $(VAVI)
+vmkv-normal vmkv-playback vmkv-controller: $(VMKV)
+v265rgb-normal v265rgb-playback v265rgb-controller: $(V265R)
+v265yuv-normal v265yuv-playback v265yuv-controller: $(V265Y)
+vqt-normal vqt-playback vqt-controller: $(VQT)
 
 raw-normal:
 	mkdir -p prof; $(LINKY) $< 20 $(HOST) 20 $(CHS) $(PERF); mv prof $@
