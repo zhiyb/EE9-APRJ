@@ -3,17 +3,17 @@
 \label{chap:Conclusion}
 %\setlength{\parindent}{0pt}
 
-The runtime performance of Vixen lighting control application was greatly improved, by changing the data preparation process and developing a new simplified playback engine. The performance improvement was incomparable to the original execution engine, so that even embedded platforms are now able to easily handle sophisticated lighting sequences with thousands of controller channels.
+\PARstart{T}{he} runtime performance of Vixen lighting control application was \ca{substantially} improved, by changing the data preparation process and developing a new simplified playback engine. \ca{With the new playback engine,} embedded platforms are now able to easily handle sophisticated lighting sequences with thousands of controller channels.
 
-A new CUI application with the new playback engine was developed specifically for embedded platforms to simplify control and management operations. Using an embedded device instead of a powerful computer to control the lighting controllers also gives greater flexibility with reduced power consumption.
+A new CUI application with the new playback engine was developed specifically for embedded platforms to simplify control and management operations. Using an embedded device instead of a powerful computer to control the lighting controllers also gives greater flexibility with reduced power consumption \ca{and cost}.
 
 Sequence export and playback of video format were implemented. Commonly available video processing, editing and analysing tools can be used together with the playback engine for more functionality and flexibility. The video format together with audio stream muxing and metadata configuration support also helps with data management and sharing.
 
 \section{Limitations}
 
-Although the performance improvement was huge, the \texttt{VixenConsole} application was still unavoidably slower than controller dedicated implementations, due to its generic modular design.
+Although the performance improvement was huge, the \texttt{VixenConsole} application was still unavoidably slower than controller \ca{specific} implementations, due to its generic modular design.
 
-The video sequences generally have extremely small frame resolution compared to modern videos and movies. The optimal encoding format requirements for sequences are also different from realistic videos. Therefore, the Vixen application may not benefit much from common video processing tools.
+The video sequences generally have extremely small frame resolution compared to modern videos and movies. The optimal encoding format requirements for sequences are also different from realistic videos. Therefore, the Vixen application may not benefit much from common video \ca{formats and} processing tools \ca{targeted at realistic videos for post editing}.
 
 Although the CUI application gives easier controllability with performance improvements, it is not as intuitive and user-friendly as a GUI application. For users without previous experiences of using CUI applications, it can be very confusing to work with.
 
