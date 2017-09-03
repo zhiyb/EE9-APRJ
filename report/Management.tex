@@ -1,0 +1,16 @@
+\chapter{\ca{Project management}}
+\renewcommand{\baselinestretch}{\mystretch}
+\label{chap:Management}
+%\setlength{\parindent}{0pt}
+
+\section{Source code management}
+
+All source code related to Vixen and other programs developed in this project were managed using git version control tool \cite{git}, hosted on GitHub \cite{github} \cite{github_vixen_yz} \cite{github_project}.
+
+Using a version control system enables history changes tracking for source code. Together with a web-based hosting service like GitHub, changes to the source code can be easily \ca{backed up} and synchronised on multiple devices and the cloud. The source code for official Vixen application was also hosted on GitHub \cite{github_vixen}. With GitHub's signature fork and pull request functionality, straightforward cooperation between different organisations and people can be achieved. The modifications made in this project can be therefore easily incorporated into the official Vixen application source code repository for public use.
+
+\section{Process management}
+
+Makefiles \cite{make} were used throughout the project for automated processing and testing. \ca{Various} text and data processing tools such as grep \cite{grep}, sed \cite{sed} and R \cite{r_project} were also used with Makefiles for automated data collection and reshaping.
+
+\lref{lst:makefile} shows one example Makefile used for automated performance tests. Using this Makefile, \ca{the} following inputs will be tested sequentially with the optimised Vixen console application: raw sequence dump, \texttt{rgb24} encoded video with audio, \texttt{rgb24} video without audio, \texttt{yuv444p} encoded video without audio and \texttt{yuv420} encoded video without audio.

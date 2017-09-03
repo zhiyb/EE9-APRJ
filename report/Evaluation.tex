@@ -3,13 +3,21 @@
 \label{chap:Eval}
 %\setlength{\parindent}{0pt}
 
+\section{\ca{Example sequences}}
+
+\PARstart{\ca{A}}{} \ca{%
+few existing sequence designs used for past lighting shows were available for use as example inputs. They all share the same set of output controller configuration. The longest sequence with a mixture of slow and rapid changing effects was used for all subsequent performance analysis, to represent an average complexity of lighting show designs. This sequence lasts for 6 minutes and 49 seconds, has 2900 elements and 8452 output channels.
+}
+
+\cmt{Frame difference percentage line chart?}
+
 \section{Original performance}
 
 The original Vixen application already has \ca{a} built-in instrumentation display interface that can show runtime performance figures such as controller update speeds. However, it lacks some elemental functionalities for performance analysis. Data logging, playback timestamps and CPU usage logging were added for performance analysis.
 
 The Vixen application uses a separate thread for each task. It has the main GUI thread for editor, a preview rendering thread and multiple dedicated threads for active controllers. This multi-threading structure can take advantage of modern multi-core multi-thread processors. However, performance on a single core machine can be poor due to context switching. Mutex locks are also required to resolve potential data access conflict, further \ca{increasing} the overhead.
 
-\fref{fig:original} shows the performance of the original Vixen execution engine. The CPU usage frequently reaches above $90 \%$, while the refresh rate \ca{is} very unstable around the configured 20 fps. Especially \ca{during} the first 60 seconds, the refresh rate drops to 5 fps while trying to keep up with element updates. At the same time, the CPU usage was about $50 \%$. On a dual-core machine, this implies one of the cores was running at full load while the other one was mostly idle. \wn{2}
+\fref{fig:original} shows the performance of the original Vixen execution engine \ca{on the Microsoft Windows-based platform}. The CPU usage frequently \ca{reached} above $90 \%$, while the refresh rate \ca{was} very unstable around the configured 20 fps. Especially \ca{during} the first 60 seconds, the refresh rate \ca{dropped} to 5 fps while trying to keep up with element updates. At the same time, the CPU usage was \ca{around} $50 \%$. On a dual-core machine, this implies one of the cores was running at full load while the other one was mostly idle.
 
 \begin{figure}[t]
   \centering
@@ -18,19 +26,19 @@ The Vixen application uses a separate thread for each task. It has the main GUI 
   \label{fig:original}
 \end{figure}
 
-Further analysis using Microsoft Visual Studio's sampling profiler shows, around $24.7 \%$ of total CPU time was \ca{spent} between translation layers for generating controller commands (\texttt{GenerateCommand}), while the actual command assignment (\texttt{\_8BitEvaluator}) takes less than $0.5 \%$ of CPU time, as shown \ca{in} \fref{fig:vixen_perf_original} hot path analysis. Another $23.0 \%$ CPU time was used for filter and element updates, $26.0 \%$ for preview rendering and $16.9 \%$ for the sequence editor, as shown \ca{in} \fref{fig:vixen_perf_original_overview}. The CPU time used for controller updates is almost negligible.
+Further analysis using Microsoft Visual Studio's sampling profiler shows, around $24.7 \%$ of total CPU time was \ca{spent} between translation layers for generating controller commands (\texttt{GenerateCommand}), while the actual command assignment (\texttt{\_8BitEvaluator}) \ca{took} less than $0.5 \%$ of CPU time, as shown \ca{in} \fref{fig:vixen_perf_original} \ca{call tree} analysis. Another $23.0 \%$ CPU time was used for filter and element updates, $26.0 \%$ for preview rendering and $16.9 \%$ for the sequence editor, as shown \ca{in} \fref{fig:vixen_perf_original_overview}. The CPU time used for controller updates \ca{was} almost negligible.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.85\columnwidth]{Figs/vixen_perf_original.png}
-  \caption{\footnotesize Hot path analysis of Vixen update threads}
+  \caption{\footnotesize \ca{Call tree} analysis of Vixen update threads}
   \label{fig:vixen_perf_original}
 \end{figure}
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.85\columnwidth]{Figs/vixen_perf_original_overview.png}
-  \caption{\footnotesize Hot path analysis of original Vixen application}
+  \includegraphics[width=0.85\columnwidth]{Figs/vixen_perf_original_overview.eps}
+  \caption{\footnotesize \ca{Call tree} analysis of original Vixen application}
   \label{fig:vixen_perf_original_overview}
 \end{figure}
 
@@ -38,7 +46,16 @@ The translation layers are used for determining the actual controller command fo
 
 The implementation of \ca{the} preview display was also very inefficient, \ca{using} only software instance management and sequential rendering. It can be improved by the utilisation of GPU through DirectX or OpenGL.
 
-Multiple real-world lighting sequences and testing sequences were tested. They all show similar performance characteristics with unstable playback frame rate for moderately complicated lighting effects.
+\ca{To reduce overheads, the show scheduler was used to render the sequences without preview and editor updates. The issue of significant refresh rate drop during first 60 seconds still persists. Although the 20 fps controller became more stabilised later, another 50 fps controller could only reach 40 fps maximum. The CPU usage was mostly around $55 \%$ to $75 \%$. \fref{fig:vixen_perf_original_scheduler} shows the detailed breakdown of CPU time spent for each tasks.}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.85\columnwidth]{Figs/vixen_perf_original_scheduler.eps}
+  \caption{\footnotesize \ca{Simplified call tree analysis of Vixen application with reduced overheads}}
+  \label{fig:vixen_perf_original_scheduler}
+\end{figure}
+
+\ca{Other example sequences were also tested.} They all show similar performance characteristics with unstable playback frame rate for moderately complicated lighting effects.
 
 \section{Port to Linux}
 
@@ -78,6 +95,8 @@ A custom controller module (\texttt{TCPLinky}) was developed based on one of \ca
 \end{figure}
 
 The reference controller implementation \texttt{BlinkyLinky} skips sending data packets when no data change \ca{is} detected. However, this is not desired for performance analysis. Therefore, this mechanism was bypassed by the \texttt{TCPLinky} controller. Data packets will be sent regardless of whether data changes \ca{are} detected or not.
+
+\ca{To avoid losing configurations of previously defined controllers, this controller was patched in parallel with existing controllers. This resulted in a duplication of channels in the exported sequences, as different controllers map to different frame data segments.}
 
 \section{\ca{Sequence exporting}}
 
@@ -120,14 +139,4 @@ To support the \ca{proposed} optimised playback engine, audio media file path wa
   \label{fig:vixen_export}
 \end{figure}
 
-\section{Source code management}
-
-All source code related to Vixen and other programs developed in this project were managed using git version control tool \cite{git}, hosted on GitHub \cite{github} \cite{github_vixen_yz} \cite{github_project}.
-
-Using a version control system enables history changes tracking for source code. Together with a web-based hosting service like GitHub, changes to the source code can be easily \ca{backed up} and synchronised on multiple devices and the cloud. The source code for official Vixen application was also hosted on GitHub \cite{github_vixen}. With GitHub's signature fork and pull request functionality, straightforward cooperation between different organisations and people can be achieved. The modifications made in this project can be therefore easily incorporated into the official Vixen application source code repository for public use.
-
-\section{Process management}
-
-Makefiles \cite{make} were used throughout the project for automated processing and testing. \ca{Various} text and data processing tools such as grep \cite{grep}, sed \cite{sed} and R \cite{r_project} were also used with Makefiles for automated data collection and reshaping.
-
-\lref{lst:makefile} shows one example Makefile used for automated performance tests. Using this Makefile, \ca{the} following inputs will be tested sequentially with the optimised Vixen console application: raw sequence dump, \texttt{rgb24} encoded video with audio, \texttt{rgb24} video without audio, \texttt{yuv444p} encoded video without audio and \texttt{yuv420} encoded video without audio.
+\ca{The example sequences were exported using 20 ms interval, or 50 fps. Because of the lack of hardware lighting setup, only the \texttt{TCPLinky} controller running at 50 fps was enabled for output. The exported channels were still duplicated, resulted in a total of 17268 channels for each frame, including 8600 channels for the \texttt{TCPLinky} controller.}
