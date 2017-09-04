@@ -88,20 +88,21 @@ The hardware specifications are listed below:
 \subsection{\ca{Linux-based} systems}
 \label{sec:systems}
 
-Multiple \ca{Linux-based} systems with a variety of resource configurations, ranging from high performance desktop platforms to low-end embedded platforms, were used for performance testing, as listed in \tref{tbl:linux}.
+Multiple \ca{Linux-based} systems with a variety of resource configurations, ranging from high performance desktop platforms to low-end embedded platforms, were used for performance testing, as listed in \tref{tbl:linux}. \ca{The laptop running Microsoft Windows also has a Linux system installed, and is listed in the table.}
 
 \begin{table}[t]
   \centering
   \begin{tabular}{l|l|l|l|l}
     \hline
-    \textbf{Name} & \textbf{Architecture} & \textbf{CPU} & \textbf{Specification} & \textbf{RAM} \\ \hline
+    \textbf{Name} & \textbf{Platform} & \textbf{CPU} & \textbf{Specification} & \textbf{RAM} \\ \hline
     \hline
-    NAS         & x86\_64 & AMD FX-8350       & 8 cores @ 4.0 GHz  & 16 GiB   \\ \hline
-    Jetson TX2  & aarch64 & NVIDIA Tegra X2   & 6 cores @ 2.0 GHz  & 8 GiB    \\ \hline
-    RPi 3B      & armv7l  & Broadcom BCM2837  & 4 cores @ 1.2 GHz  & 1 GiB    \\ \hline
-    RPi Zero W  & armv6l  & Broadcom BCM2835  & 1 core @ 1.0 GHz   & 512 MiB  \\ \hline
-    RPi B       & armv6l  & Broadcom BCM2835  & 1 core @ 900 MHz   & 512 MiB  \\ \hline
-    Noah NP1380 & mipsel  & Ingenic JZ4740    & 1 core @ 336 MHz   & 64 MiB   \\ \hline
+    NAS         & x86\_64 & AMD FX-8350       & 8 cores @ 4.0 GHz   & 16 GiB  \\ \hline
+    Laptop      & x86\_64 & Intel i5-3337U    & 2 cores @ 1.80 GHz  & 8 GiB   \\ \hline
+    Jetson TX2  & aarch64 & NVIDIA Tegra X2   & 6 cores @ 2.0 GHz   & 8 GiB   \\ \hline
+    RPi 3B      & armv7l  & Broadcom BCM2837  & 4 cores @ 1.2 GHz   & 1 GiB   \\ \hline
+    RPi Zero W  & armv6l  & Broadcom BCM2835  & 1 core @ 1.0 GHz    & 512 MiB \\ \hline
+    RPi B       & armv6l  & Broadcom BCM2835  & 1 core @ 900 MHz    & 512 MiB \\ \hline
+    Noah NP1380 & mipsel  & Ingenic JZ4740    & 1 core @ 336 MHz    & 64 MiB  \\ \hline
   \end{tabular}
   \caption{\footnotesize \ca{Linux-based} systems}
   \label{tbl:linux}
@@ -166,7 +167,7 @@ The \texttt{ffmpeg} framework consists of several individual libraries that \ca{
 
 There are multiple format \ca{type specifications} for a single video file. First of all, a video container format will be needed to encapsulate \ca{multiple} streams of \ca{different} data \ca{types in a generic video file}. \ca{Such streams may be video streams, audio streams and/or subtitle text streams}. These formats specify how data elements are stored inside a single file, but \ca{do} not specify the encoding or compression format used by individual data streams. Some examples of this type of \ca{format} includes \texttt{mp4} \cite{mp4}, \texttt{avi} \cite{avi} and \texttt{mkv} \cite{mkv}.
 
-For \ca{a} video data stream, another set of encoding formats is used. For example, \texttt{h265} \cite{h265}, \texttt{h264} \cite{h264}, and \texttt{mpeg} \cite{mpeg}. In addition, \cad{which} colour space and colour channels will \ca{also need to} be specified. This is known as pixel format. It is often specified by combining colour channels, channel sizes and channel ordering together. The \ca{two} most common colour spaces are YUV (luminance and chrominance) and RGB (red, green and blue). For example, pixel format \ca{``}yuv444p\ca{''} specifies colour space YUV with Y and UV channels taking 12 bytes per 4 pixels, and the channels are stored separately as planes. Similarly, pixel format \ca{``}yuv420p\ca{''} specifies YUV colour space with channels taking 6 bytes per 4 pixels, whereas \ca{``}rgb24\ca{''} specifies RGB colour space with R, G and B channels stored sequentially taking 3 bytes pre pixel.
+For \ca{a} video data stream, another set of encoding formats is used. For example, \texttt{h265} \cite{h265}, \texttt{h264} \cite{h264}, and \texttt{mpeg} \cite{mpeg}. In addition, colour space and colour channels will \ca{also need to} be specified. This is known as pixel format. It is often specified by combining colour channels, channel sizes and channel ordering together. The \ca{two} most common colour spaces are \texttt{YUV} (luminance and chrominance) and \texttt{RGB} (red, green and blue). For example, pixel format \texttt{yuv444p} specifies colour space \texttt{YUV} with \texttt{Y} and \texttt{UV} channels taking 12 bytes per 4 pixels, and the channels are stored separately as planes. Similarly, pixel format \texttt{yuv420p} specifies \texttt{YUV} colour space with channels taking 6 bytes per 4 pixels, whereas \texttt{rgb24} specifies \texttt{RGB} colour space with \texttt{R}, \texttt{G} and \texttt{B} channels stored sequentially taking 3 bytes pre pixel.
 
 \section{Audio rendering engine}
 
@@ -178,7 +179,7 @@ The original Vixen application already uses \texttt{FMOD} as a plugin in the ori
 
 Several performance analysers on different platforms \ca{were} used \ca{throughout} the project for optimisation and debugging \ca{purposes}.
 
-On Microsoft Windows, the built-in sampling profiler for Visual Studio was used. It samples the program stack frame multiple times during runtime without significant impact to program performance, analyses execution frequencies and \ca{durations} of individual functions.
+On Microsoft Windows, the built-in sampling profiler for Visual Studio was used. It samples the stack frame multiple times during runtime without significant impact to program performance, analyses execution frequencies and \ca{durations} of individual functions.
 
 On Linux, the mono project also has \ca{a profiler} with sampling mode for \ca{analysing} code segments that were written with C\# using .NET runtime. Linux also has sampling profilers for native programs, especially the \texttt{perf} profiler \cite{de2010new}. However, they \ca{cannot} provide much information about code written with intermediate languages such as C\# with .NET runtime. \ca{The mono profiler were used for most of the C\# implementations in this project, while \texttt{perf} was used occasionally for native libraries.}
 

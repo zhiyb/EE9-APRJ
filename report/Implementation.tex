@@ -203,8 +203,6 @@ To minimise number of files needed for playback, the optional audio file was mux
 
 In the playback engine, video frames will be transformed to controller data frames for rendering. However, the existing audio rendering engine \texttt{FMOD} from Vixen only supports media file playback. The required functionality of playing decoded \ca{audio} data frames was not available from its C\# API. To resolve this issue, C code for operating a newer version of \texttt{FMOD} was added to the wrapper library. The playback engine transfers the decoded audio frame back to the wrapper library for audio playback.
 
-\cmt{Therefore, audio playback using the ``Raw'' sequence was unsupported by \texttt{VixenConsole}.}
+\ca{The original audio media functions were not available with \texttt{VixenConsole} on Linux-based platforms, due to the outdated \texttt{FMOD} version. To support audio playback with ``Raw'' sequences, which use separate audio files, the media file decoding and audio rendering routines from the wrapper library were used instead.}
 
-It is possible to support audio playback with exported ``Raw'' sequences using the newer version of \texttt{FMOD}. However, this was not implemented yet.
-
-\cmt{TODO: Implement audio playback with ``Raw'' sequence, update performance data}
+\ca{Synchronisation between the sequence and audio stream was also implemented, by duplicating audio frames or dropping excess audio data from audio frame buffer. The maximum stream offset will be kept within 200 ms, not very noticeable.}
