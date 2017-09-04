@@ -8,14 +8,81 @@ implementations of various portions of the final optimised controller applicatio
 }
 
 \begin{enumerate}[noitemsep,leftmargin=4cm]
+  \item[\texttt{TCPLinky}:] A custom controller module and a server that can simulate a network connected controller with thousands of channels.
+  \item[Sequence exporting:] Export sequences for the new playback engine.
   \item[Qt2 demo:] A controller specific application using C++ with Qt2-based GUI, to test the performance of the NP1380 platform and showcase an interactive application design.
   \item[\texttt{VixenLinky}:] C\# implementation of a controller specific application, for use as the references of the optimal performances on different platforms.
-  \item[Playback engine:] Integrate the sequence decoding routine from \texttt{VixenLinky} to the Vixen application as a separate playback engine.
-  \item[\texttt{VixenConsole}:] A command-line interface (CUI) version of the Vixen application, but with only minimal functionalities and a working playback engine for embedded platforms.
-  \item[Video transcoding:] Various programs for video processing, integrated into the playback engine for video format support.
+  \item[Playback engine:] Integrate the sequence decoding routine from \texttt{VixenLinky} to the Vixen application as a separate fast playback engine.
+  \item[\texttt{VixenConsole}:] A command-line interface (CUI) version of the Vixen application, but with only essential functionalities and a working playback engine for embedded platforms.
+  \item[Video transcoding:] Various programs for video processing was developed and integrated into the playback engine for video format support.
 \end{enumerate}
 
-\clearpage
+\newpage
+
+\section{Custom controller}
+\label{sec:tcplinky}
+
+A custom controller module \ca{named} \texttt{TCPLinky} was developed based on one of \ca{Vixen's} existing \ca{controllers}, \texttt{BlinkyLinky}. This controller uses TCP connection to transfer display channel data, \ca{and} supports up to 65535 channels.
+
+A corresponding cross-platform server application that simulates a multi-channel display was also developed using C++ with Qt \cite{qt} and OpenGL \cite{shreiner2009opengl} rendering. \ca{This combination of programming language and GUI libraries enables fast packet decoding and GPU acceleration for display interface,} allows real-time \ca{simulation of numerous display output channels} without the need \ca{for} a complex physical lighting system setup. Data dumping, performance and statistical analysis \ca{were also implemented}.
+
+\fref{fig:tcplinky_server} shows a screenshot of the server application. \ca{On the Windows-based testing platform,} it consumes less than $3 \%$ of CPU time under 50 fps refresh rate, which is negligible. It \ca{was also} compiled and executed on other computers \ca{to simulate real-world} network connected controller scenarios. \ca{For  all performance tests performed in this project, this server application was running on a platform different to the platform under test, in order to reduce undesired impact of performance and simulate controller connection.}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.6\columnwidth]{Figs/tcplinky_server.png}
+  \caption{\footnotesize Screenshot of \texttt{TCPLinky} controller server application}
+  \label{fig:tcplinky_server}
+\end{figure}
+
+The reference controller implementation \texttt{BlinkyLinky} skips sending data packets when no data change \ca{is} detected. However, this is not desired for performance analysis. Therefore, this mechanism was bypassed by the \texttt{TCPLinky} controller. Data packets will be sent regardless of whether data changes \ca{are} detected or not.
+
+\ca{To avoid losing configurations of previously defined controllers, this controller was patched in parallel with existing controllers. This resulted in a duplication of channels in the exported sequences, as different controllers will map to different frame data segments.}
+
+\ca{\section{Sequence exporting}}
+
+\cad{Although the custom controller module is capable of...}
+
+\ca{The existing sequence export function from sequence editor} was originally used to convert the lighting sequence to formats recognisable by other controller specific applications. It renders the sequence using a manual timing source stepped after each frame, \ca{giving} accurate constant data dump intervals. It can also write all controller channel mapping information to a separate XML file. An example XML file is shown \ca{in} \lref{lst:network_xml}.
+
+\begin{lstlisting}[float,floatplacement=ht,language=XML,label=lst:network_xml,captionpos=b,caption={\footnotesize Example controller mapping XML file}]
+<?xml version="1.0" encoding="utf-8"?>
+<Vixen3_Export>
+  <Resolution>20</Resolution>
+  <OutFile>luf2013_20ms.raw</OutFile>
+  <Duration>00:04:45.8050000</Duration>
+  <Network>
+    <Controller>
+      <Index>0</Index>
+      <Name>E6804 arches L</Name>
+      <StartChan>1</StartChan>
+      <Channels>2048</Channels>
+    </Controller>
+    <Controller>
+      <Index>1</Index>
+      <Name>Lynx DMX</Name>
+      <StartChan>2049</StartChan>
+      <Channels>156</Channels>
+    </Controller>
+  </Network>
+  <Media>
+    <FilePath>example_audio.mp3</FilePath>
+  </Media>
+</Vixen3_Export>
+\end{lstlisting}
+
+To support the \ca{proposed} optimised playback engine, audio media file path was added to the XML. The export dialog window was modified to allow custom frame resolution through text input, instead of a few pre-defined fixed values on the drop down list, as shown \ca{in} \fref{fig:vixen_export}. \ca{An additional} data format \ca{entry named ``Raw File''} for the playback engine was also added to the export wizard. This ``Raw'' format is a simple sequential concatenation of frames, where each frame \ca{comprises} of 6-byte header, 2-byte channel count and \ca{is} followed by continuous channel data.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.75\columnwidth]{Figs/vixen_export.png}
+  \caption{\footnotesize Modified Vixen export dialog window}
+  \label{fig:vixen_export}
+\end{figure}
+
+\ca{The example sequences were exported using 20 ms interval, or 50 fps. Because of the lack of hardware lighting setup, only the \texttt{TCPLinky} controller running at 50 fps was enabled for output. The exported channels were still duplicated, resulted in a total of 17268 channels for each frame, including 8600 channels for the \texttt{TCPLinky} controller.}
+
+\newpage
 
 \section{\ca{Qt2-based} implementation}
 
