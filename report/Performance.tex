@@ -153,7 +153,7 @@ Where $N_f$ is the number of frames, $N_c$ is the number of channels, $A$ and $B
     \hline
     \textbf{Type} & \textbf{File size} & \textbf{Data rate} & \textbf{Difference} & \textbf{Average PSNR} \\ \hline
     \hline
-    Packed \texttt{RGB} with rgb24     & 26.6 MiB  & 544 kb/s  & -         & -         \\ \hline
+    Packed \texttt{RGB} with rgb24     & 26.6 MiB  & 546 kb/s  & -         & -         \\ \hline
     Packed \texttt{YUV} with yuv444p    & 29.5 MiB  & 604 kb/s  & -         & -         \\ \hline
     Planar \texttt{YUV}     & 38.3 MiB  & 784 kb/s  & -         & -         \\ \hline
     \hline
@@ -178,12 +178,53 @@ Where $N_f$ is the number of frames, $N_c$ is the number of channels, $A$ and $B
   \hfil
   \subfloat[Jetson TX2]{\includegraphics[width=0.6\textwidth]{Figs/TX2-perf.eps}%
   \label{fig:perf_TX2}}
-  \caption{\footnotesize Performances of different implementations on different platforms}
+  \caption{\footnotesize Performances of different implementations and video encoding formats}
   \label{fig:perf}
 \end{figure*}
 
 \fref{fig:perf_RPi} shows the performance comparison between different implementations on Raspberry Pi B. \texttt{VixenLinky} (referenced by \texttt{raw}) has the highest refresh rate for its simplicity. \texttt{VixenConsole} with the ``Raw'' sequence format (referenced by \texttt{seq}) has the second highest performance. The unlimited playback performance drops to almost half when using a \texttt{rgb24} encoded video as the input (referenced by \texttt{v}). The performance drops again by a small factor when audio stream was also added to the video input (referenced by \texttt{va}). The video only playback performance of \texttt{yuv420p} encoding (referenced by \texttt{v420}) is only a little bit higher than the lossless \texttt{rgb24} encoding (\texttt{v}), whereas the performance of lossless \texttt{yuv444p} encoding (referenced by \texttt{vyuv}) is noticeably lower. Therefore, video encoding format of \texttt{libx264rgb} with \texttt{rgb24} pixel format is more suitable for encoding video sequences.
 
-\ca{\fref{fig:perf_RPi3} and} \fref{fig:perf_TX2} shows the performance comparison \ca{on two other platforms}, \ca{the Raspberry Pi 3B and} the NVIDIA Jetson TX2 platforms. \ca{The refresh rate easily reached a few hundreds of fps on the Raspberry Pi 3B platform, and more on the TX2 platform, which} has \ca{a} similar single core CPU performance to the Microsoft Windows laptop. \ca{On the TX2 platform, the} maximum refresh rates \ca{reached} over 1,000 fps for playback and 10,000 fps for controllers. For the 50 fps \ca{test} sequence, the CPU usage almost never reaches above $1 \%$. \ca{Compared} to the original Vixen application struggling to \ca{reach a} 50 fps refresh rate on Microsoft Windows, the new playback engine definitely achieved \ca{substantial} performance improvements.
+\ca{\fref{fig:perf_RPi3} and} \fref{fig:perf_TX2} shows the performance comparison \ca{on two other platforms}, \ca{the Raspberry Pi 3B and} the NVIDIA Jetson TX2 platforms. \ca{The refresh rate easily reached a few hundreds of fps on the Raspberry Pi 3B platform, and more on the Jetson TX2 platform, which} has \ca{a} similar single core CPU performance to the Microsoft Windows laptop. \ca{On the Jetson TX2 platform, the} maximum refresh rates \ca{reached} over 1,000 fps for playback and 10,000 fps for controllers. For the 50 fps \ca{test} sequence, the CPU usage almost never reaches above $1 \%$. \ca{Compared} to the original Vixen application struggling to \ca{reach a} 50 fps refresh rate on Microsoft Windows, the new playback engine definitely achieved \ca{substantial} performance improvements.
 
-\cmt{Test different container formats?}
+\begin{figure*}[t]
+  \centering
+  \subfloat[Raspberry Pi B]{\includegraphics[width=0.65\textwidth]{Figs/fmts-RPi-perf.eps}%
+  \label{fig:fmts_RPi}}
+  \hfil
+  \subfloat[Raspberry Pi 3B]{\includegraphics[width=0.65\textwidth]{Figs/fmts-RPi3-perf.eps}%
+  \label{fig:fmts_RPi3}}
+  \hfil
+  \subfloat[Jetson TX2]{\includegraphics[width=0.66\textwidth]{Figs/fmts-TX2-perf.eps}%
+  \label{fig:fmts_TX2}}
+  \caption{\footnotesize Performances of different video container formats}
+  \label{fig:fmts}
+\end{figure*}
+
+\begin{table}[t]
+  \centering
+  \begin{tabular}{l|l|l|l}
+    \hline
+    \textbf{Label} & \textbf{Type} & \textbf{File size} & \textbf{Data rate} \\ \hline
+    \hline
+    seq & \texttt{Raw} sequence reference                   & 337 MiB   & 6748 kb/s \\ \hline
+    avi & \texttt{avi}, \texttt{h264}, \texttt{rgb24}       & 27.5 MiB  & 564 kb/s  \\ \hline
+    mkv & \texttt{mkv}, \texttt{h264}, \texttt{rgb24}       & 26.7 MiB  & 548 kb/s  \\ \hline
+    mp4 & \texttt{mp4}, \texttt{h264}, \texttt{rgb24}       & 26.6 MiB  & 546 kb/s  \\ \hline
+    mov & \texttt{mov}, \texttt{h264}, \texttt{rgb24}       & 26.6 MiB  & 546 kb/s  \\ \hline
+    qtrle & \texttt{mov}, QuickTime, \texttt{rgb24}         & 40.9 MiB  & 838 kb/s  \\ \hline
+    h265rgb & \texttt{mp4}, \texttt{h265}, \texttt{rgb24}   & 33.6 MiB  & 688 kb/s  \\ \hline
+    h265yuv & \texttt{mp4}, \texttt{h265}, \texttt{yuv444p} & 30.1 MiB  & 617 kb/s  \\ \hline
+  \end{tabular}
+  \caption{\footnotesize Comparison between different video container formats}
+  \label{tbl:fmts}
+\end{table}
+
+\ca{
+\fref{fig:fmts} shows performance companions of multiple lossless combinations of video container and encoding formats on these three platforms. \tref{tbl:fmts} lists their relevant file sizes. There is only one entry with QuickTime encoding, because the QuickTime encoder from \texttt{ffmpeg} only supports \texttt{mov} and \texttt{mkv} container formats, and the \texttt{mov} container gives smaller file size. Because \texttt{h265} decoding are not supported by \texttt{libav} on Raspberry Pis, and it did not show outstanding performance or file size optimisation on the Jetson TX2 platform, it was not tested on Raspberry Pi platforms.
+
+The container formats \texttt{avi}, \texttt{mkv}, \texttt{mp4} and \texttt{mov} with the same \texttt{h264} encoding have almost the same maximum playback performance, but \texttt{mp4} and \texttt{mov} have smaller file sizes. The performance of QuickTime encoding, together with \texttt{mov} container format, almost reaches the performance of ``Raw'' sequence.
+
+\subsection{Conclusion}
+
+In conclusion, for highest performance, the QuickTime encoding format, together with \texttt{mov} container format and \texttt{rgb24} pixel format should be used. The \texttt{h264} encoding format with \texttt{mp4} or \texttt{mov} container format and \texttt{rgb24} pixel format is a more balanced choice between performance and file size. To further reduce file size with lossy encoding, a CRF of 12 may be used without producing noticeable artefacts.
+}
