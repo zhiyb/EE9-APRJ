@@ -2,6 +2,7 @@
 
 RAW	= ~/Vixen/luf2016_the-ark_20ms.raw
 SEQ	= ~/Vixen/luf2016_the-ark_20ms_Network.xml
+SEQA	= ~/Vixen/luf2016_the-ark_20ms_audio_Network.xml
 VA	= ~/Vixen/2016.rgb24.audio.test_enc.mp4
 V	= ~/Vixen/2016.rgb24.test_enc.mp4
 VYUV	= ~/Vixen/2016.yuv444p.test_enc.mp4
@@ -15,7 +16,7 @@ VQT	= ~/Vixen/2016.qtrle.rgb24.mov
 PERF	= 500
 PERF_PB	= 100
 
-HOST	= 192.168.1.72 12345
+HOST	= 192.168.1.128 12345
 CHS	= 8669 8600
 
 LINKY	= mono VixenLinky.exe
@@ -27,6 +28,7 @@ all: raw seq va v vyuv v420 vmkv vavi v265rgb v265yuv vqt
 .PHONY: raw seq va v vyuv v420
 raw: raw-normal raw-playback raw-controller
 seq: seq-normal seq-playback seq-controller
+seqa: seqa-normal seqa-playback seqa-controller
 va: va-normal va-playback va-controller
 v: v-normal v-playback v-controller
 vyuv: vyuv-normal vyuv-playback vyuv-controller
@@ -39,6 +41,7 @@ vqt: vqt-normal vqt-playback vqt-controller
 
 raw-normal raw-playback raw-controller: $(RAW)
 seq-normal seq-playback seq-controller: $(SEQ)
+seqa-normal seqa-playback seqa-controller: $(SEQA)
 va-normal va-playback va-controller: $(VA)
 v-normal v-playback v-controller: $(V)
 vyuv-normal vyuv-playback vyuv-controller: $(VYUV)
