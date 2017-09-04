@@ -6,10 +6,10 @@ set terminal pdf size 3.5, 5
 set output out
 set tmargin at screen 0.9
 
-raw_p = "raw-playback.csv"
-raw_c = "raw-controller.csv"
-seq_p = "seq-playback.csv"
-seq_c = "seq-controller.csv"
+raw_p = "types-raw-playback.csv"
+raw_c = "types-raw-controller.csv"
+seq_p = "types-seq-playback.csv"
+seq_c = "types-seq-controller.csv"
 set datafile separator ","
 set key autotitle columnhead
 
