@@ -88,6 +88,8 @@ To pre-render the sequence, two different methods are possible. A dummy controll
 \section{Custom controller}
 \label{sec:tcplinky}
 
+\cmt{Move to Implementation}
+
 A custom controller module (\texttt{TCPLinky}) was developed based on one of \ca{Vixen's} existing \ca{controllers} (\texttt{BlinkyLinky}). This controller uses TCP connection to transfer display channel data, \ca{and} supports up to 65535 channels. A corresponding cross-platform server application that simulates a multi-channel display was also developed using C++ with Qt \cite{qt} and OpenGL \cite{shreiner2009opengl} rendering. \ca{This combination of programming language and GUI libraries enables fast packet decoding and GPU acceleration for display interface,} allows real-time \ca{simulation of numerous display output channels} without the need \ca{for} a complex physical lighting system setup. Data dumping, performance and statistical analysis can also be easily achieved.
 
 \fref{fig:tcplinky_server} shows a screenshot of the server application. \cad{With the help of GPU...} \ca{On the Windows-based testing platform,} it consumes less than $3 \%$ of CPU time under 50 fps refresh rate, which is negligible. It \ca{was also} compiled and executed on other computers \ca{to simulate real-world} network connected controller scenarios. \ca{For  all performance tests performed in this project, this server application was running on a platform different to the platform under test, in order to reduce undesired impact of performance and simulate controller connection.}
