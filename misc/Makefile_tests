@@ -9,6 +9,7 @@ VYUV	= ~/Vixen/2016.yuv444p.test_enc.mp4
 V420	= ~/Vixen/2016.yuv420p.test_enc.mp4
 VAVI	= ~/Vixen/2016.rgb24.avi
 VMKV	= ~/Vixen/2016.rgb24.mkv
+VMOV	= ~/Vixen/2016.rgb24.mov
 V265R	= ~/Vixen/2016.h265.rgb24.mp4
 V265Y	= ~/Vixen/2016.h265.yuv444p.mp4
 VQT	= ~/Vixen/2016.qtrle.rgb24.mov
@@ -23,7 +24,7 @@ LINKY	= mono VixenLinky.exe
 CONSOLE	= MONO_IOMAP=all mono VixenConsole.exe
 
 .PHONY: all
-all: raw seq va v vyuv v420 vmkv vavi v265rgb v265yuv vqt seqa
+all: raw seq va v vyuv v420 vmkv vavi v265rgb v265yuv vqt seqa vmov
 
 .PHONY: raw seq va v vyuv v420
 raw: raw-normal raw-playback raw-controller
@@ -38,6 +39,7 @@ vmkv: vmkv-normal vmkv-playback vmkv-controller
 v265rgb: v265rgb-normal v265rgb-playback v265rgb-controller
 v265yuv: v265yuv-normal v265yuv-playback v265yuv-controller
 vqt: vqt-normal vqt-playback vqt-controller
+vmov: vmov-normal vmov-playback vmov-controller
 
 raw-normal raw-playback raw-controller: $(RAW)
 seq-normal seq-playback seq-controller: $(SEQ)
@@ -51,6 +53,7 @@ vmkv-normal vmkv-playback vmkv-controller: $(VMKV)
 v265rgb-normal v265rgb-playback v265rgb-controller: $(V265R)
 v265yuv-normal v265yuv-playback v265yuv-controller: $(V265Y)
 vqt-normal vqt-playback vqt-controller: $(VQT)
+vmov-normal vmov-playback vmov-controller: $(VMOV)
 
 raw-normal:
 	mkdir -p prof; $(LINKY) $< 20 $(HOST) 20 $(CHS) $(PERF); mv prof $@
