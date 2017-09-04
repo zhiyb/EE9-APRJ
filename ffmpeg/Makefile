@@ -5,8 +5,8 @@ LIB	= libcodec.so
 EXE	= codec.exe
 MONO	= MONO_IOMAP=all mono
 
-#FMOD_FLAGS	= -DENABLE_FMOD
-#FMOD_LIBS	= -lfmod
+FMOD_FLAGS	= -DENABLE_FMOD
+FMOD_LIBS	= -lfmod
 
 #CROSS	= mipsel-linux-
 OPTIMIZE	:= -g -O3

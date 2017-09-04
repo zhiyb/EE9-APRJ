@@ -815,7 +815,7 @@ FMOD_RESULT F_CALLBACK pcmreadcallback(FMOD_SOUND *sound, void *data, unsigned i
 		return FMOD_ERR_NOTREADY;
 	}
 	// Check whether drop frame for synchronisation
-	if (size >= datalen * 4u)
+	if (size >= datalen * 2u)
 		buf->rp += datalen;
 	memcpy(data, buf->rp, datalen);
 	buf->rp += datalen;
