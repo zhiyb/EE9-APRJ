@@ -694,6 +694,11 @@ AVFrame *decode_audio_frame(data_t *data, AVPacket *pkt)
 	return iframe;
 }
 
+unsigned int decode_audio_frame_length(AVFrame *frame)
+{
+	return 1000u * frame->nb_samples / frame->sample_rate;
+}
+
 AVFrame *decode_video_frame(data_t *data, AVPacket *pkt)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;

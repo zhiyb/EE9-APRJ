@@ -35,6 +35,7 @@ int decode_open_input(data_t *data, const char *file, char **comment,
 AVCodecContext *decode_context(data_t *data, const int video);
 AVPacket *decode_read_packet(data_t *data, int *got, int *video);
 AVFrame *decode_audio_frame(data_t *data, AVPacket *pkt);
+unsigned int decode_audio_frame_length(AVFrame *frame);
 AVFrame *decode_video_frame(data_t *data, AVPacket *pkt);
 void decode_free_packet(AVPacket *pkt);
 void decode_close(data_t *data);
