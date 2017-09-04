@@ -23,7 +23,7 @@ LINKY	= mono VixenLinky.exe
 CONSOLE	= MONO_IOMAP=all mono VixenConsole.exe
 
 .PHONY: all
-all: raw seq va v vyuv v420 vmkv vavi v265rgb v265yuv vqt
+all: raw seq va v vyuv v420 vmkv vavi v265rgb v265yuv vqt seqa
 
 .PHONY: raw seq va v vyuv v420
 raw: raw-normal raw-playback raw-controller
