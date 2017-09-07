@@ -3,15 +3,14 @@
 \label{chap:Impl}
 %\setlength{\parindent}{0pt}
 
-\PARstart{\ca{S}}{\ca{everal}} \ca{%
-implementations of various portions of the final optimised controller application were developed independently, so that each portion can be verified working before integration. The implementations were developed as the following steps:
+\PARstart{V}{arious} \ca{\cb{portions of the final optimised controller application were developed as individual implementations incrementally}, so that each portion can be verified working before integration. The implementations were developed \cb{in} the following steps:
 }
 
 \begin{enumerate}[noitemsep,leftmargin=4cm]
   \item[\texttt{TCPLinky}:] A custom controller module and a server that can simulate a network connected controller with thousands of channels.
   \item[Sequence exporting:] Export sequences for the new playback engine.
   \item[Qt2 demo:] A controller specific application using C++ with Qt2-based GUI, to test the performance of the NP1380 platform and showcase an interactive application design.
-  \item[\texttt{VixenLinky}:] C\# implementation of a controller specific application, for use as the references of the optimal performances on different platforms.
+  \item[\texttt{VixenLinky}:] C\# implementation of a controller specific application, for use as the references of \cb{ideal} performances on different platforms.
   \item[Playback engine:] Integrate the sequence decoding routine from \texttt{VixenLinky} to the Vixen application as a separate fast playback engine.
   \item[\texttt{VixenConsole}:] A command-line interface (CUI) version of the Vixen application, but with only essential functionalities and a working playback engine for embedded platforms.
   \item[Video transcoding:] Various programs for video processing was developed and integrated into the playback engine for video format support.
@@ -26,7 +25,7 @@ A custom controller module \ca{named} \texttt{TCPLinky} was developed based on o
 
 A corresponding cross-platform server application that simulates a multi-channel display was also developed using C++ with Qt \cite{qt} and OpenGL \cite{shreiner2009opengl} rendering. \ca{This combination of programming language and GUI libraries enables fast packet decoding and GPU acceleration for display interface,} allows real-time \ca{simulation of numerous display output channels} without the need \ca{for} a complex physical lighting system setup. Data dumping, performance and statistical analysis \ca{were also implemented}.
 
-\fref{fig:tcplinky_server} shows a screenshot of the server application. \ca{On the Windows-based testing platform,} it consumes less than $3 \%$ of CPU time under 50 fps refresh rate, which is negligible. It \ca{was also} compiled and executed on other computers \ca{to simulate real-world} network connected controller scenarios. \ca{For  all performance tests performed in this project, this server application was running on a platform different to the platform under test, in order to reduce undesired impact of performance and simulate controller connection.}
+\fref{fig:tcplinky_server} shows a screenshot of the server application. \ca{On the Windows-based testing platform,} it consumes less than $3 \%$ of CPU time under 50 fps refresh rate, which is negligible. It \ca{was also} compiled and executed on other computers \ca{to simulate real-world} network connected controller scenarios. \ca{For  all performance tests performed in this project, this server application was running on a platform different to the platform under test, in order to reduce undesired impact of performance and simulate controller \cb{connections}.}
 
 \begin{figure}[t]
   \centering
@@ -43,7 +42,7 @@ The reference controller implementation \texttt{BlinkyLinky} skips sending data 
 
 \cad{Although the custom controller module is capable of...}
 
-\ca{The existing sequence export function from sequence editor} was originally used to convert the lighting sequence to formats recognisable by other controller specific applications. It renders the sequence using a manual timing source stepped after each frame, \ca{giving} accurate constant data dump intervals. It can also write all controller channel mapping information to a separate XML file. An example XML file is shown \ca{in} \lref{lst:network_xml}.
+\ca{The existing sequence \cb{exporting method} from sequence editor} was originally used to convert the lighting sequence to formats recognisable by other controller specific applications. It renders the sequence using a manual timing source stepped after each frame, \ca{giving} accurate constant data dump intervals. It can also write all controller channel mapping information to a separate XML file. An example XML file is shown \ca{in} \lref{lst:network_xml}.
 
 \begin{lstlisting}[float,floatplacement=ht,language=XML,label=lst:network_xml,captionpos=b,caption={\footnotesize Example controller mapping XML file}]
 <?xml version="1.0" encoding="utf-8"?>
@@ -95,7 +94,7 @@ A GUI application dedicated to the \texttt{TCPLinky} controller was developed us
   \label{fig:vixen_noah}
 \end{figure}
 
-\fref{fig:vixen_noah} shows a screenshot of the dedicated application. The method of performance profiling through statistic files in proc file system was also tested. These smaller progress bars at the lower half of the application shows percentages of CPU time spent on different tasks, such as user space applications, kernel mode and interrupt handling. Most of the time only less than $50 \%$ CPU time was used for this controller application, \ca{indicating that} even this low-end device is capable of handling thousands of lighting channels.
+\fref{fig:vixen_noah} shows a screenshot of the dedicated application. The method of performance profiling through statistic files in \cb{the} \texttt{proc} file system was also tested. These smaller progress bars at the lower half of the application shows percentages of CPU time spent on different tasks, such as user space applications, kernel mode and interrupt handling. Most of the time only less than $50 \%$ CPU time was used for this controller application, \ca{indicating that} even this low-end device is capable of handling thousands of lighting channels.
 
 \section{Minimal C\# implementation}
 
@@ -103,7 +102,7 @@ To set up a reference baseline for optimal performance \ca{of the new playback e
 
 \ca{\subsection{Implementation}}
 
-\ca{\texttt{VixenLinky} was implemented using C\#, takes} the same \ca{``Raw''} sequence data \ca{format}, but \ca{supports} only the \texttt{TCPLinky} controller developed in \sref{sec:tcplinky}. \ca{It was} implemented as \ca{simply} as possible without all intermediate layers \ca{and module loading routines}, but still \ca{using} a threading structure \ca{identical to} the original Vixen application. \ca{The source code for controlling the \texttt{TCPLinky} controller} was ported directly from the original Vixen application \ca{to ensure compatibility and similarity}.
+\ca{\texttt{VixenLinky} was implemented using C\#, takes} the same \ca{``Raw''} sequence data \ca{format}, but \ca{supports} only the \texttt{TCPLinky} controller developed in \sref{sec:tcplinky}. \ca{It was} implemented as \ca{simply} as possible without all intermediate layers \ca{and module loading routines}, but still \ca{using} a threading structure \ca{identical to} the \ca{proposed playback engine}. \ca{The source code for controlling the \texttt{TCPLinky} controller} was ported directly from the original Vixen application \ca{to ensure compatibility and similarity}.
 
 \ca{\subsection{Purpose}}
 
@@ -124,11 +123,11 @@ After \ca{verifying} the ability \ca{to load and render} the exported lighting \
 
 \subsection{Implementation}
 
-The playback engine starts by reading the exported network XML file. To simplify the process, \ca{an} XML object serialiser was used to interpret \ca{and store} the XML \ca{data structure} to a similarly structured C\# object for later access. The information \ca{read} from XML will be used to determine controller channel mapping, update interval and optional audio media file. To further reduce \ca{matching} overhead, the controller names will be looked up and converted to their unique ID (GUID) \ca{instead}. The optional audio media file was supported by utilising the same audio media functions from original execution engine.
+The playback engine starts by reading the exported network XML file. To simplify the process, \ca{an} XML object serialiser was used to interpret \ca{and store} the XML \ca{data structure} to a similarly structured C\# object for later access. The information \ca{read} from XML will be used to determine controller channel mapping, update interval and optional audio media file. To further reduce \ca{matching} overhead, the controller names will be looked up and converted to their unique ID (GUID) \ca{instead}. The optional audio media file was supported by utilising the same audio media functions from \cb{the} original execution engine.
 
 All preview, element and filter updates were skipped in the playback engine. The translation layers were skipped, since the sequence data is already specific to the controllers. However, in order to match the existing interface of controller modules, \ca{segments of sequence data frame buffer} still need to be copied again \ca{as command batches for each controllers}, incurring some unnecessary overhead.
 
-The structure of update management was also changed\ca{, as illustrated in \fref{fig:update}}. \ca{In the original execution engine}, the application updates \ca{data buffers} from \ca{controller update requests}, which requires the use of mutex \ca{locks to coordinate} data \ca{accesses} between controller threads. With a configuration \ca{consists} of multiple controllers, potential lock contention of the mutex can also incur some overhead. \ca{To address this issue, another} thread dedicated to sequence loading was \ca{added} to the playback engine, similar to the structure of controller specific implementations. In this way, only the sequence loading thread may update the channel data buffer, \ca{removing} the need of mutex \ca{locks}.
+The structure of update management was also changed\ca{, as illustrated in \fref{fig:update}}. \ca{In the original execution engine}, the application updates \ca{data buffers} from \ca{controller update requests}, which requires the use of mutex \ca{locks to coordinate} data \ca{accesses} between controller threads. With a configuration \ca{consists} of multiple controllers, potential lock contention of the mutex can incur some overhead. \ca{To address this issue, another} thread dedicated to sequence loading was \ca{added} to the playback engine, \cb{also in} the structure of controller specific implementations. In this way, only the sequence loading thread may update the channel data buffer, \ca{removing} the need of mutex \ca{locks}. \cb{A potential problem of this implementation is, if the content of frame buffer changed during controller update, tearing effect may appear. This can be resolved by delaying and synchronising controller updates to frame buffer updates, similar to the vertical synchronisation technique used in modern monitors.}
 
 \begin{figure*}[t]
   \centering
@@ -158,7 +157,7 @@ The playback control was also integrated \ca{as a new type of action into the} b
 
 \section{Console application}
 
-\ca{To improve the usability of the new playback engine on Linux-based platforms especially embedded platforms, a} Command-line User Interface (CUI) version of Vixen, named \texttt{VixenConsole}, was implemented. It is easier to operate and manage a CUI based program through remote connection \ca{and automated scripts} instead of a distorted partially functional GUI application \ca{on Linux}. \cref{chap:Guide} \ca{lists} the detailed usage description of \texttt{VixenConsole}.
+\ca{To improve the usability of the new playback engine on Linux-based platforms, especially embedded platforms, a} Command-line User Interface (CUI) version of Vixen, named \texttt{VixenConsole}, was implemented. It is easier to operate and manage a CUI based program through remote connection \ca{and automated scripts} instead of a distorted partially functional GUI application \ca{on Linux}. \cref{chap:Guide} \ca{lists} the detailed usage description of \texttt{VixenConsole}.
 
 \ca{Different from the reference implementation \texttt{VixenLinky} that only supports the \texttt{TCPLinky} controller, this \texttt{VixenConsole} application is a simplified version of the Vixen GUI application, supports all controller modules the Vixen GUI application supports.}
 
@@ -186,11 +185,11 @@ The \texttt{ffmpeg} framework uses the C programming language for its API. The c
 
 The development of video integration was separated into multiple steps. Firstly, several C programs were developed to test individual video processing functions including video encoding, video decoding, stream muxing and metadata \ca{retrieval}. Afterwards, working code segments were combined into a dynamic library, with a simplified API suitable for C\#. A C\# wrapper class was then developed using the \texttt{InterOp} service \cite{interop}, together with another C\# program for testing video encoding and decoding. After all these small testing programs had been confirmed working, the C\# wrapper was finally integrated into Vixen with the playback engine. The playback engine checks for \ca{the} input file extension to determine whether to load the file as \ca{an} exported ``Raw'' sequence or \ca{a} video file.
 
-\ca{The default video encoding format for encoding exported sequences is \texttt{h264} with \texttt{rgb24} pixel format.} It is possible to add support for multiple video formats as options to the \ca{wrapper} library to directly transcode from ``Raw'' sequence to other video formats. However, this can make the encoding process \ca{and export options} over complicated. Instead, other dedicated video transcoding tools can be used for the same task. The decoding routine used in playback engine was designed to support any video encoding format, by converting the video frames to \texttt{rgb24} format internally.
+\ca{The default video encoding format for encoding exported sequences is \cb{lossless} \texttt{h264} \cb{encoding} with \texttt{rgb24} pixel format.} It is possible to add support for multiple video formats as options to the \ca{wrapper} library to directly transcode from ``Raw'' sequence to other video \cb{encoding} formats. However, this can make the encoding process \ca{and export options} over complicated. Instead, other dedicated video transcoding tools can be used for the same task. The decoding routine used in \cb{the} playback engine was designed to support any video encoding format, by converting the video frames to \texttt{rgb24} format internally.
 
 To ensure lossless transcoding from the ``Raw'' sequence to \ca{a} video stream, the transcoding programs were tested by encoding example sequences to \ca{videos} then decoded back to \ca{new sequences}. The \ca{new} sequences were then compared for any difference \ca{to the original sequence}, using the GNU \texttt{diff} tool \cite{diff}. Makefile was used for automated \ca{compilation} and testing.
 
-To minimise number of files needed for playback, the optional audio file was muxed together with the video stream, and the network configuration XML file was stored directly as \ca{a} string literal in \ca{a} video metadata field \ca{named} ``comment'', as shown \ca{in} \fref{fig:video-info}.
+To minimise number of files needed for playback, the optional audio file was muxed together with the video stream. \cb{The} network configuration XML file was \cb{also} stored \cb{in the video file} as \ca{a} string literal in \ca{a} metadata field \ca{named} ``comment'', as shown \ca{in} \fref{fig:video-info}.
 
 \begin{figure}[t]
   \centering
@@ -203,6 +202,6 @@ To minimise number of files needed for playback, the optional audio file was mux
 
 In the playback engine, video frames will be transformed to controller data frames for rendering. However, the existing audio rendering engine \texttt{FMOD} from Vixen only supports media file playback. The required functionality of playing decoded \ca{audio} data frames was not available from its C\# API. To resolve this issue, C code for operating a newer version of \texttt{FMOD} was added to the wrapper library. The playback engine transfers the decoded audio frame back to the wrapper library for audio playback.
 
-\ca{The original audio media functions were not available with \texttt{VixenConsole} on Linux-based platforms, due to the outdated \texttt{FMOD} version. To support audio playback with ``Raw'' sequences, which use separate audio files, the media file decoding and audio rendering routines from the wrapper library were used instead.}
+\ca{The \cb{existing audio media file rendering engine was} not available with \texttt{VixenConsole} on Linux-based platforms, due to the outdated \texttt{FMOD} version. To support audio playback with ``Raw'' sequences, which use separate audio files, the media file decoding and audio rendering routines from the wrapper library were used instead.}
 
 \ca{Synchronisation between the sequence and audio stream was also implemented, by duplicating audio frames or dropping excess audio data from audio frame buffer. The maximum stream offset will be kept within 200 ms, not very noticeable.}
