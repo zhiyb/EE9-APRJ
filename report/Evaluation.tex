@@ -5,14 +5,13 @@
 
 \ca{\section{Example sequences}}
 
-\PARstart{\ca{A}}{} \ca{%
-few existing sequence designs used for past lighting shows were available for use as example inputs. They all share the same set of output controller configuration. The longest sequence with a mixture of slow and rapid changing effects was used for all subsequent performance analysis, to represent an average complexity of lighting show designs. \fref{fig:diff} shows the complexity of this test sequence, plotted by averaging the percentage difference between two continuous frames every one second. This sequence lasts for 6 minutes and 49 seconds, has 2900 elements and 8452 output channels.
+\PARstart{\ca{A}}{} \ca{few existing sequence designs used for past lighting shows were available for use as example inputs. They all share the same set of output controller configuration. The longest sequence with a mixture of slow and rapid changing effects was used for all subsequent performance analysis, to represent an average complexity of lighting show designs. \fref{fig:diff} shows the complexity of this test sequence, plotted by averaging the percentage difference between two continuous frames every second. This sequence lasts for 6 minutes and 49 seconds. \cb{It was made from} 2900 elements\cb{, a total of} 8452 output channels.
 }
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.8\columnwidth]{Figs/diff.eps}
-  \caption{\footnotesize Frame difference of the test sequence averaged every one second}
+  \caption{\footnotesize Frame difference of the test sequence averaged every second}
   \label{fig:diff}
 \end{figure}
 
@@ -83,4 +82,4 @@ Instead of trying to improve the original execution engine, the performance prob
 
 Two steps are needed for this approach. \ca{The sequence must be pre-rendered} with precise frame interval, then \ca{the rendered data must be played back} to the controllers as a separate process\ca{, possibly} on an entirely different platform.
 
-To pre-render the sequence, two different methods are possible. A dummy controller can be used for runtime data dumping, or a separate export engine with manual frame control independent of wall-clock time \ca{can be used}. \ca{Both of these methods were tested. Although a custom controller fit more naturally and requires less modification to the existing structure, it cannot give the indication of sequence start, end and information about other controllers. More importantly, it can have unstable frame rates influenced by CPU usage. A high performance computer is required for near prefect pre-rendering by controller dumping. Therefore, the existing sequence export function from sequence editor was used instead.}
+To pre-render the sequence, two different methods are possible. A dummy controller can be used for runtime data dumping, or a separate export engine with manual frame control independent of wall-clock time \ca{can be used}. \ca{Both of these methods were tested. Although a custom controller \cb{module can be installed} more naturally and requires less modification to the existing structure, it cannot give the indication of sequence start, end and information about other controllers. More importantly, it can have unstable frame rates influenced by CPU usage. A high performance computer is required for near prefect pre-rendering by controller dumping. Therefore, the existing sequence export function from sequence editor was used instead.}

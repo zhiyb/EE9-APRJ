@@ -56,16 +56,16 @@ Vixen also has a preview display. It maps element outputs to sets of points on a
   \label{fig:vixen-preview}
 \end{figure}
 
-The Vixen application also features a show scheduler to automatically start a predefined sequence at \ca{a} specific time. Before the shows can be started, the scheduler need to pre-process all scheduled items first. Sequences \ca{using} the original execution engine need a pre-rendering process, which can take a significant amount of time.
+The Vixen application also features a show scheduler to automatically start \cb{predefined lighting sequences} at \cb{specific times}. Before the shows can be started, the scheduler \cb{needs} to pre-process all scheduled items first. Sequences \ca{using} the original execution engine need \cb{pre-rendering processes}, which can take a significant amount of time.
 
 \section{Similar applications}
 
 \ca{
-There are a few other lighting show companies at the present: Light-O-Rama \cite{lightorama}, SyncroLight \cite{syncrolight} and Revival Control Systems \cite{revival}. Their proprietary software suites ranging from free basic version up to \$189.95 unlimited version with different channel number limitations, and are all Microsoft Windows only, requiring a computer to work with. Their supported controller types are limited, and also have limitations on lighting effects supported by different controllers. By being proprietary, the exact details of their show engines are not possible to obtain.
+  There are a few other lighting show companies at the present: Light-O-Rama \cite{lightorama}, SyncroLight \cite{syncrolight} and Revival Control Systems \cite{revival}. Their proprietary software suites \cb{have multiple variants of licenses available} from free basic version up to \$189.95 unlimited version with different channel number limitations, and are all Microsoft Windows only, requiring a computer to work with. Their supported controller types are limited, and also have limitations on lighting effects supported by different controllers. By being proprietary, the exact details of their show engines are not possible to obtain.
 
 The Light-O-Rama software suite has a sequence downloader utility that can only be used with its own customised controllers. After downloaded the sequence, the controller can run in stand-alone mode independently from the computer. From the sequence size optimisation notes, it is most likely using channel intensity levels dumped per frame when intensity changes are present.
 
-Similarly, SyncroLight has a show player with limited controller support for Raspberry Pi. To use it, the show need to be exported to their own \texttt{SHP} file format as the input. It is most likely also a channel data dump.
+Similarly, SyncroLight has a show player with limited controller support for Raspberry Pi. To use it, the show \cb{needs} to be exported to their own \texttt{SHP} file format as the input. It is most likely also a channel data dump.
 
 Vixen also has a sequence export function for a few controller types, as shown in \fref{fig:vixen_export}. However, the objective of this project is to develop an optimised playback engine, not restricted to certain controller types.
 }
@@ -167,7 +167,7 @@ The \texttt{ffmpeg} framework consists of several individual libraries that \ca{
 
 There are multiple format \ca{type specifications} for a single video file. First of all, a video container format will be needed to encapsulate \ca{multiple} streams of \ca{different} data \ca{types in a generic video file}. \ca{Such streams may be video streams, audio streams and/or subtitle text streams}. These formats specify how data elements are stored inside a single file, but \ca{do} not specify the encoding or compression format used by individual data streams. Some examples of this type of \ca{format} includes \texttt{mp4} \cite{mp4}, \texttt{avi} \cite{avi} and \texttt{mkv} \cite{mkv}.
 
-For \ca{a} video data stream, another set of encoding formats is used. For example, \texttt{h265} \cite{h265}, \texttt{h264} \cite{h264}, and \texttt{mpeg} \cite{mpeg}. In addition, colour space and colour channels will \ca{also need to} be specified. This is known as pixel format. It is often specified by combining colour channels, channel sizes and channel ordering together. The \ca{two} most common colour spaces are \texttt{YUV} (luminance and chrominance) and \texttt{RGB} (red, green and blue). For example, pixel format \texttt{yuv444p} specifies colour space \texttt{YUV} with \texttt{Y} and \texttt{UV} channels taking 12 bytes per 4 pixels, and the channels are stored separately as planes. Similarly, pixel format \texttt{yuv420p} specifies \texttt{YUV} colour space with channels taking 6 bytes per 4 pixels, whereas \texttt{rgb24} specifies \texttt{RGB} colour space with \texttt{R}, \texttt{G} and \texttt{B} channels stored sequentially taking 3 bytes pre pixel.
+For \ca{a} video data stream, another set of encoding formats is used, \cb{such as} \texttt{h264} \cite{h264} and \texttt{mpeg} \cite{mpeg}. In addition, colour space and colour channels will \ca{also need to} be specified. This is known as pixel format. It is often specified by combining colour channels, channel sizes and channel ordering together. The \ca{two} most common colour spaces are \texttt{YUV} (luminance and chrominance) and \texttt{RGB} (red, green and blue). For example, pixel format \texttt{yuv444p} specifies colour space \texttt{YUV} with \texttt{Y} and \texttt{UV} channels taking 12 bytes per 4 pixels, and the channels are stored separately as planes. Similarly, pixel format \texttt{yuv420p} specifies \texttt{YUV} colour space with channels taking 6 bytes per 4 pixels, whereas \texttt{rgb24} specifies \texttt{RGB} colour space with \texttt{R}, \texttt{G} and \texttt{B} channels stored sequentially taking 3 bytes pre pixel.
 
 \section{Audio rendering engine}
 
@@ -181,7 +181,7 @@ Several performance analysers on different platforms \ca{were} used \ca{througho
 
 On Microsoft Windows, the built-in sampling profiler for Visual Studio was used. It samples the stack frame multiple times during runtime without significant impact to program performance, analyses execution frequencies and \ca{durations} of individual functions.
 
-On Linux, the mono project also has \ca{a profiler} with sampling mode for \ca{analysing} code segments that were written with C\# using .NET runtime. Linux also has sampling profilers for native programs, especially the \texttt{perf} profiler \cite{de2010new}. However, they \ca{cannot} provide much information about code written with intermediate languages such as C\# with .NET runtime. \ca{The mono profiler were used for most of the C\# implementations in this project, while \texttt{perf} was used occasionally for native libraries.}
+On Linux, the mono project also has \ca{a profiler} with sampling mode for \ca{analysing} code segments that were written with C\# using .NET runtime. Linux also has sampling profilers for native programs, especially the \texttt{perf} profiler \cite{de2010new}. However, they \ca{cannot} provide much information about code written with intermediate languages such as C\# with .NET runtime. \ca{The mono profiler \cb{was} used for most of the C\# implementations in this project, while \texttt{perf} was used occasionally for native libraries.}
 
 \section{Performance profiling method}
 
