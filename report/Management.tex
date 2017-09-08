@@ -5,12 +5,12 @@
 
 \section{Source code management}
 
-\PARstart{A}{ll} source code related to Vixen and other programs developed in this project were managed using git version control tool \cite{git}, hosted on GitHub \cite{github} \cite{github_vixen_yz} \cite{github_project}.
+\PARstart{A}{ll} source code related to Vixen and other programs developed in this project were managed using \cc{the} git version control tool \cite{git}, \cc{and} hosted on GitHub \cite{github} \cite{github_vixen_yz} \cite{github_project}.
 
-Using a version control system enables history changes tracking for source code. Together with a web-based hosting service like GitHub, changes to the source code can be easily \ca{backed up} and synchronised on multiple devices and the cloud. The source code for official Vixen application was also hosted on GitHub \cite{github_vixen}. With GitHub's signature fork and pull request functionality, straightforward cooperation between different organisations and people can be achieved. The modifications made in this project can be therefore easily incorporated into the official Vixen application source code repository for public use.
+Using a version control system enables history \cc{change-tracking} for source code. Together with a web-based hosting service like GitHub, changes to the source code can be easily \ca{backed up} and synchronised \cc{across} multiple devices and the cloud. The source code for \cc{the} official Vixen application was also hosted on GitHub \cite{github_vixen}. With GitHub's signature fork and pull request functionality, straightforward cooperation between different organisations and people can be achieved. The modifications made in this project can be therefore easily incorporated into the official Vixen application source code repository for public use.
 
 \section{Process management}
 
 Makefiles \cite{make} were used throughout the project for automated processing and testing. \ca{Various} text and data processing tools such as grep \cite{grep}, sed \cite{sed} and R \cite{r_project} were also used with Makefiles for automated data collection and reshaping.
 
-\lref{lst:makefile} shows one example Makefile used for automated performance tests. Using this Makefile, \ca{the} following inputs will be tested sequentially \cb{using} the optimised \cb{\texttt{VixenConsole}} application: raw sequence dump, \texttt{rgb24} encoded video with audio, \texttt{rgb24}, \texttt{yuv444p} and \texttt{yuv420p} \cb{encoded} video without audio.
+\lref{lst:makefile} shows one example Makefile used for automated performance tests. Using this Makefile, \ca{the} following inputs will be tested sequentially \cb{using} the optimised \cb{\texttt{VixenConsole}} application: raw sequence dump, \cc{\texttt{rgb24}-encoded} video with audio \cc{stream}, \cc{\texttt{rgb24}-encoded}, \cc{\texttt{yuv444p}-encoded} and \cc{\texttt{yuv420p}-encoded} \cc{videos} without audio \cc{stream}.

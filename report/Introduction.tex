@@ -5,37 +5,28 @@
 
 \section{The problem}
 
-\PARstart{V}{ixen} 3 \cite{vixen} is an open-source application for designing and controlling automation lighting displays. With modern technologies, computer-controlled displays are becoming increasingly popular as holiday decorations and other lighting show projects. Vixen is capable of supporting multiple display controllers with thousands of channels for complex lighting shows and effects. It can also synchronise the lighting sequence to audio playback.
+\PARstart{V}{ixen} 3 \cite{vixen} is an open-source application for designing and controlling \cc{automated} lighting displays. With modern technologies, computer-controlled displays are becoming increasingly popular as holiday decorations and other lighting show projects. Vixen is capable of supporting multiple display controllers with thousands of channels for complex lighting shows and effects. It can also synchronise the lighting \cc{sequences} to audio playback.
 
-By being open-source, Vixen is primarily built towards lower cost Do-It-Yourself solutions. Together with the support of software plugins, users can create customised plugins to support a variety of display controllers, or improve the Vixen software framework itself.
+By being open-source, Vixen is primarily built \cc{for lower-cost} Do-It-Yourself solutions. Together with the support of software plugins, users can create customised plugins to support a variety of display controllers, or improve the Vixen software framework itself.
 
 However, the current execution engine used by Vixen has significant computational overheads. Consequently, a powerful computer with sufficient memory space is required to render the lighting effects in real-time. This may not be \cb{feasible} in \cb{certain} situations. \cb{Having a powerful computer dedicated to lighting effects can greatly increase} the cost of \cb{lighting} setup, and is very energy inefficient.
 
 \clearpage
 
-\ca{\section{Aims}}
-
-\ca{The targets to be achieved are:}
-
-\begin{itemize}[noitemsep]
-  \item Develop a new fast playback engine for Vixen application.
-  \item Reduce runtime computational requirements.
-  \item Control lighting display with tens of thousand of channels from embedded device.
-  \item Possibly \cb{parallelise} some components of the engine.
-\end{itemize}
+\cmtc{Yes aims are all duplicated.. The loading and controllers are running in parallel as separate threads.}
 
 \ca{\section{Achievements}}
 
 \ca{The achievements of this project are:}
 
 \begin{itemize}[noitemsep]
-  \item A new playback engine was developed, integrated into Vixen application.
-  \item New export formats from pre-rendering implemented for the new engine.
-  \item The new engine reduces layers of overheads, achieved remarkable performance.
+  \item A new playback engine was developed, integrated \cb{to} Vixen application.
+  \item New export formats from pre-rendering \cb{were} implemented for the new engine.
+  \item The new engine reduces layers of overheads, \cb{achieving} remarkable performance.
   \item A CUI version of Vixen was implemented with portability for embedded platforms.
-  \item \cb{Video formatted lighting sequences} were supported.
-  \item Analysed different sets of video formats for an optimal choice between sequence file size and performance.
-  \item Stream muxing was implemented for combining video, audio and configuration text, to simplify management and sharing of sequences.
+  \item \cb{Video formatted lighting sequences} were supported \cc{to take the benefits of compression and multiplexing}.
+  \item \cc{Analysis of} different sets of video formats for an optimal choice between sequence file size and performance.
+  \item Stream \cb{multiplexing} was implemented for combining video, audio and configuration text to simplify management and sharing of sequences.
   \item Audio playback was implemented for embedded platforms.
-  \item The CUI Vixen application can easily \cb{handle} thousands of lighting channels on a low-end Raspberry Pi B, with extendable controller support as modules.
+  \item The CUI Vixen application can easily \cb{handle} thousands of lighting channels on a low-end Raspberry Pi B with extendable controller support as modules.
 \end{itemize}

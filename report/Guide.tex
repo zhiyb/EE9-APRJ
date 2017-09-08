@@ -1,5 +1,5 @@
-\ca{\chapter{User Guide}}
 \renewcommand{\baselinestretch}{\mystretch}
+\ca{\chapter{User Guide}}
 \label{chap:Guide}
 %\setlength{\parindent}{0pt}
 
@@ -14,11 +14,11 @@ To export sequence designs for the playback engine, open the \textit{Export Sequ
   \label{fig:guide_export}
 \end{figure}
 
-Select \textit{Raw File} as \textit{Output Format}, and configure the required frame interval at \textit{Resolution (ms)}. All the controller channels listed in \textit{Network} will be exported.
+Select \textit{Raw File} as \textit{Output Format}, and configure the required frame interval \cc{with} \textit{Resolution (ms)}. All the controller channels listed in \textit{Network} will be exported.
 
-Click on \textit{Start}, select a sequence save location, the export process should be started. It may take a few minutes to render the sequence.
+Click on \textit{Start}, select a sequence save location, \cc{and} the export process \cc{will start}. It may take a few minutes to render the sequence.
 
-Two files will be created, the selected \texttt{*.raw} file and a network configuration file \texttt{*\_Network.xml}. The sequence file and an optional audio file will be specified in the network configuration file. In case their file names or paths changed, the relevant fields in the network configuration file should be updated as well.
+Two files will be created\cc{;} the selected \texttt{*.raw} file and a network configuration file \texttt{*\_Network.xml}. The sequence file and an optional audio file will be specified in the network configuration file. In case their file names or paths changed, the relevant fields in the network configuration file should be updated as well.
 
 \section{Video transcoding tool}
 
@@ -42,7 +42,7 @@ Examples:
 \end{lstlisting}
 \renewcommand{\baselinestretch}{\mystretch}
 
-\section{Invoke the playback engine from GUI}
+\section{\cc{Invoking} the playback engine from GUI}
 
 The playback engine can be accessed from the main window, under menu \textit{Tools} $\rightarrow$ \textit{Playback}. (\fref{fig:guide_playback})
 
@@ -53,13 +53,13 @@ The playback engine can be accessed from the main window, under menu \textit{Too
   \label{fig:guide_playback}
 \end{figure}
 
-Set a network configuration file or a video sequence file, click \textit{Play}, rendering should be started using the playback engine.
+Set a network configuration file or a video sequence file, click \textit{Play}, \cc{and} rendering \cc{will start} using the \cc{new} playback engine.
 
-\section{Setup schedules with the playback engine}
+\section{\cc{Setting up} schedules with the playback engine}
 
 The scheduler schedules lighting shows at specific times. To create or modify a show, open the show setup dialog from the main window, under menu \textit{Scheduler} $\rightarrow$ \textit{Shows}.
 
-Different actions can be added to different stages of a show. The playback engine can be scheduled by adding an action of type \textit{Playback}, with a network configuration file or a video sequence file as input. (\fref{fig:guide_show})
+Different actions can be added to different stages of a show. The \cc{new} playback engine can be scheduled by adding an action of type \textit{Playback}, with a network configuration file or a video sequence file as input. (\fref{fig:guide_show})
 
 \begin{figure}[!htb]
   \centering
@@ -72,14 +72,14 @@ After creating a show, the scheduler can be accessed from the main window, under
 
 \begin{figure}[!htb]
   \centering
-  \includegraphics[width=0.8\columnwidth]{Figs/vixen_scheduler.png}
+  \includegraphics[width=0.75\columnwidth]{Figs/vixen_scheduler.png}
   \caption{\footnotesize Scheduler setup dialog}
   \label{fig:guide_scheduler}
 \end{figure}
 
 \section{VixenConsole CUI application}
 
-To use the playback engine from command line, the CUI application \texttt{VixenConsole} is available. It is also optimised for Linux-based systems and mono runtime.
+To use the playback engine from command line, the CUI application \texttt{VixenConsole} is available. It is also optimised for Linux-based systems and \cc{the} mono runtime.
 
 \newpage
 
@@ -103,7 +103,7 @@ Supported sequence file formats:
     *.avi, *.mp4, ...		| Video sequence file
 
 Configuration files:
-    The controller configurations are read from the `Vixen 3' directory under
+    The controller configurations are read from the `Vixen 3' directory under \cc{the}
     user home directory. The directory structure and file formats are compatible
     with the Vixen GUI application.
 

@@ -6,6 +6,7 @@
 \newcommand{\tref}[1]{\tablename~\ref{#1}}
 \newcommand{\lref}[1]{Listing~\ref{#1}}
 \newcommand{\cref}[1]{Chapter~\ref{#1}}
+\newcommand{\aref}[1]{Appendix~\ref{#1}}
 \newcommand{\sref}[1]{Section~\ref{#1}}
 
 % Colours
@@ -26,7 +27,10 @@
 \renewcommand{\cad}[1]{}
 \newcommand{\cb}[1]{{\color{darkorange}#1}}
 
-\renewcommand{\cb}[1]{#1}
+%\renewcommand{\cb}[1]{#1}
+\newcommand{\cc}[1]{{\color{darkorange}#1}}
+\newcommand{\ccd}[1]{{\color{darkorange}\sout{#1}}}
+\newcommand{\cmtc}[1]{\cmt{#1}}
 
 % Todo boxes
 \newcommandx{\improv}[2][1=]{\todo[linecolor=Plum,backgroundcolor=Plum!25,bordercolor=Plum,#1]{#2}}

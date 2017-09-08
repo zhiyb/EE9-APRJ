@@ -3,26 +3,28 @@
 \label{chap:Conclusion}
 %\setlength{\parindent}{0pt}
 
-\PARstart{T}{he} runtime performance of Vixen lighting control application was \ca{substantially} improved, by changing the data preparation process and developing a new simplified playback engine. \ca{With the new playback engine,} embedded platforms are now able to easily handle sophisticated lighting sequences with thousands of controller channels.
+\PARstart{T}{he} runtime performance of \cc{the} Vixen lighting control application was \ca{substantially} improved by changing the data preparation process and developing a new simplified playback engine. \ca{With the new playback engine,} embedded platforms are now able to easily handle sophisticated lighting sequences with thousands of controller channels.
 
 A new CUI application with the new playback engine was developed specifically for embedded platforms to simplify control and management operations. Using an embedded device instead of a powerful computer to control the lighting controllers also gives greater flexibility with reduced power consumption \ca{and cost}.
 
-Sequence \cb{exporting} and playback of video \cb{formatted sequences} were implemented. Commonly available video processing, editing and analysing tools can be used together with the playback engine for more functionality and flexibility. The video format together with audio stream muxing and metadata configuration support also helps with data management and sharing.
+Sequence \cb{exporting} and playback of video \cc{formats} were implemented. Commonly available video processing, editing and analysing tools can be used together with the playback engine for more functionality and flexibility. The video \cc{formatted sequences} together with audio stream muxing and metadata configuration support also helps with data management and sharing.
 
 \section{Limitations}
 
-Although the performance improvement was huge, the \texttt{VixenConsole} application was still unavoidably slower than controller \ca{specific} implementations, due to its generic modular design.
+Although the performance improvement was huge, the \texttt{VixenConsole} application was still unavoidably slower than \cc{controller-\ca{specific}} implementations due to its generic modular design.
 
-The video sequences generally have extremely small frame resolution compared to modern videos and movies. The optimal encoding format requirements for sequences are also different from realistic videos. Therefore, the Vixen application may not benefit much from common video \ca{formats and} processing tools \ca{targeted at realistic videos for post editing \cb{purposes}}.
+The video sequences generally have extremely small frame resolution compared to modern videos and movies. The optimal encoding format requirements for sequences are also different from realistic videos. Therefore, the Vixen application may not benefit much from common video \ca{formats and} processing tools \ca{\cc{targetted} at realistic videos for \cc{post-editing} \cb{purposes}}.
 
-Although the CUI application gives easier controllability with performance improvements, it is not as intuitive and user-friendly as a GUI application. For users without previous experiences of using CUI applications, it can be very confusing to work with.
+Although the CUI application gives easier controllability with performance improvements, it is not as intuitive and user-friendly as a GUI application. For users without previous \cc{experience} of using CUI applications, it can be very confusing to work with.
 
-\section{Future works}
+\section{Future \cc{works}}
 
-Some code segments, such as the playback engine control form (\fref{fig:vixen_playback}), can be improved. These code segments were implemented only with proof-of-concept level of details. More extensive exception checks and user friendly additional functionalities are needed.
+Some code segments, such as the playback engine control form (\fref{fig:vixen_playback}), can be improved. These code segments were implemented only with \cc{a} proof-of-concept level of \cc{detail}. More extensive exception checks and \cc{user-friendly} additional functionalities are needed.
 
-The integration between original execution engine and the new playback engine can be improved. Currently, the playback engine takes priority over the execution engine, which might cause undesired behaviour under certain circumstances. The execution engines should also be switched off during idle to further reduce CPU usage.
+The integration between \cc{the} original execution engine and the new playback engine can be improved. Currently, the playback engine takes priority over the execution engine, which might cause undesired behaviour under certain circumstances\cc{, such as high CPU usage under idle state}. The execution engines should also be switched off during idle to further reduce CPU usage.
 
-Support for element back-mapping and preview display was not implemented for the playback engine yet. It may require extraction of mapping configurations during export.
+Support for element back-mapping and preview display \cc{has not been} implemented for the playback engine yet. It may require \cc{the} extraction of mapping configurations during export.
 
-The video channel mapping can be more intuitive. For example, map controller channels using the preview layout design. In this way, the sequence can be directly previewed and edited using existing multimedia software.
+The video channel mapping can be more intuitive. For example, \cc{mapping} controller channels using the preview layout design \cc{may be desirable}. In this way, the \cc{exported sequences} can be directly previewed and edited using existing multimedia software.
+
+\cc{GPU rendering can be used for the existing preview panel, to improve its efficiency.}
