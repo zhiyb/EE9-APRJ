@@ -15,3 +15,8 @@ audio
 *.head
 *.raw
 *.xml
+*.dll
+*.exp
+*.lib
+*.obj
+*.a

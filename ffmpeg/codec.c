@@ -1,4 +1,3 @@
-#include <libgen.h>
 #include <stdint.h>
 #include <string.h>
 #include <malloc.h>
@@ -20,6 +19,12 @@
 
 #ifdef ENABLE_FMOD
 #include <fmod.h>
+#endif
+
+#ifdef WIN32
+#define EXPORT	__declspec(dllexport)
+#else
+#define EXPORT
 #endif
 
 /* {{{ Structure and basics */
@@ -51,18 +56,18 @@ typedef struct data_t {
 #endif
 } data_t;
 
-void codec_init()
+EXPORT void codec_init()
 {
 	av_register_all();
 	avfilter_register_all();
 }
 
-int codec_version()
+EXPORT int codec_version()
 {
 	return LIBAVCODEC_VERSION_INT;
 }
 
-data_t *codec_alloc()
+EXPORT data_t *codec_alloc()
 {
 	return (data_t *)calloc(1, sizeof(data_t));
 }
@@ -83,7 +88,7 @@ static void free_data(data_t *data)
 		avformat_free_context(data->fmt_ctx);
 }
 
-void codec_free(data_t *data)
+EXPORT void codec_free(data_t *data)
 {
 	free(data);
 }
@@ -105,7 +110,7 @@ void log_packet_data(const data_t *data, const AVPacket *pkt)
 }
 #endif
 
-AVCodec *find_codec(const char *codec_name)
+EXPORT AVCodec *find_codec(const char *codec_name)
 {
 	AVCodec *codec = avcodec_find_encoder_by_name(codec_name);
 	if (!codec) {
@@ -191,7 +196,7 @@ error:
 	return 0;
 }
 
-int encode_open_output(data_t *data, const char *file, const char *comment)
+EXPORT int encode_open_output(data_t *data, const char *file, const char *comment)
 {
 	// Open output media file
 	AVFormatContext *fmt_ctx;
@@ -217,7 +222,7 @@ int encode_open_output(data_t *data, const char *file, const char *comment)
 	return 1;
 }
 
-int encode_add_audio_stream_copy(data_t *data, AVCodecContext *dec_ac)
+EXPORT int encode_add_audio_stream_copy(data_t *data, AVCodecContext *dec_ac)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	if (!dec_ac)
@@ -260,7 +265,7 @@ int encode_add_audio_stream_copy(data_t *data, AVCodecContext *dec_ac)
 	return data->audio.stream;
 }
 
-int encode_add_video_stream(data_t *data, AVCodec *vcodec,
+EXPORT int encode_add_video_stream(data_t *data, AVCodec *vcodec,
 		const char *pix_fmt_name, int resolution, int channels)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
@@ -301,7 +306,7 @@ int encode_add_video_stream(data_t *data, AVCodec *vcodec,
 	return data->video.stream;
 }
 
-data_t *encode_write_header(data_t *data, const char *file)
+EXPORT data_t *encode_write_header(data_t *data, const char *file)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	// Audio stream context
@@ -324,7 +329,7 @@ data_t *encode_write_header(data_t *data, const char *file)
 	return encode_allocate(data, ac, vc);
 }
 
-int encode_write_audio_packet(data_t *data, AVPacket *pkt)
+EXPORT int encode_write_audio_packet(data_t *data, AVPacket *pkt)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	int stream = data->audio.stream;
@@ -337,7 +342,7 @@ int encode_write_audio_packet(data_t *data, AVPacket *pkt)
 	return ret >= 0;
 }
 
-int encode_write_audio_frame(data_t *data, AVFrame *frame)
+EXPORT int encode_write_audio_frame(data_t *data, AVFrame *frame)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	AVCodecContext *c = fmt_ctx->streams[data->audio.stream]->codec;
@@ -365,7 +370,7 @@ int encode_write_audio_frame(data_t *data, AVFrame *frame)
 	return av_interleaved_write_frame(fmt_ctx, &pkt) >= 0;
 }
 
-AVFrame *encode_channels(data_t *data, void *fp, int channels)
+EXPORT AVFrame *encode_channels(data_t *data, uint8_t *fp, int channels)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	AVCodecContext *c = fmt_ctx->streams[data->video.stream]->codec;
@@ -390,7 +395,7 @@ AVFrame *encode_channels(data_t *data, void *fp, int channels)
 	return oframe;
 }
 
-int encode_write_video_frame(data_t *data, AVFrame *frame)
+EXPORT int encode_write_video_frame(data_t *data, AVFrame *frame)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	AVCodecContext *c = fmt_ctx->streams[data->video.stream]->codec;
@@ -474,7 +479,7 @@ static void encode_flush_audio(data_t *data)
 	av_write_trailer(fmt_ctx);
 }
 
-int encode_write_packet_or_frame(data_t *data, AVPacket *pkt, AVFrame *frame)
+EXPORT int encode_write_packet_or_frame(data_t *data, AVPacket *pkt, AVFrame *frame)
 {
 	int video;
 	if (pkt && frame) {
@@ -492,7 +497,7 @@ int encode_write_packet_or_frame(data_t *data, AVPacket *pkt, AVFrame *frame)
 	return video;
 }
 
-void encode_close(data_t *data)
+EXPORT void encode_close(data_t *data)
 {
 	if (!data)
 		return;
@@ -600,7 +605,7 @@ static int decode_find_stream(const char *file, AVFormatContext *fmt_ctx,
 	return stream;
 }
 
-int decode_open_input(data_t *data, const char *file, char **comment, int *gota, int *gotv)
+EXPORT int decode_open_input(data_t *data, const char *file, char **comment, int *gota, int *gotv)
 {
 	AVFormatContext *fmt_ctx = NULL;
 	if (avformat_open_input(&fmt_ctx, file, NULL, NULL) < 0) {
@@ -640,7 +645,7 @@ int decode_open_input(data_t *data, const char *file, char **comment, int *gota,
 	return 1;
 }
 
-AVCodecContext *decode_context(data_t *data, const int video)
+EXPORT AVCodecContext *decode_context(data_t *data, const int video)
 {
 	int stream = video ? data->video.stream : data->audio.stream;
 	if (stream < 0)
@@ -648,7 +653,7 @@ AVCodecContext *decode_context(data_t *data, const int video)
 	return data->fmt_ctx->streams[stream]->codec;
 }
 
-AVPacket *decode_read_packet(data_t *data, int *got, int *video)
+EXPORT AVPacket *decode_read_packet(data_t *data, int *got, int *video)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	AVFrame *iframe = data->iframe, *oframe = data->oframe;
@@ -675,7 +680,7 @@ AVPacket *decode_read_packet(data_t *data, int *got, int *video)
 	return &data->pkt;
 }
 
-AVFrame *decode_audio_frame(data_t *data, AVPacket *pkt)
+EXPORT AVFrame *decode_audio_frame(data_t *data, AVPacket *pkt)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	AVFrame *iframe = data->iframe, *oframe = data->oframe;
@@ -694,12 +699,12 @@ AVFrame *decode_audio_frame(data_t *data, AVPacket *pkt)
 	return iframe;
 }
 
-unsigned int decode_audio_frame_length(AVFrame *frame)
+EXPORT unsigned int decode_audio_frame_length(AVFrame *frame)
 {
 	return 1000u * frame->nb_samples / frame->sample_rate;
 }
 
-AVFrame *decode_video_frame(data_t *data, AVPacket *pkt)
+EXPORT AVFrame *decode_video_frame(data_t *data, AVPacket *pkt)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	AVFrame *iframe = data->iframe, *oframe = data->oframe;
@@ -718,7 +723,7 @@ AVFrame *decode_video_frame(data_t *data, AVPacket *pkt)
 	return iframe;
 }
 
-void decode_free_packet(AVPacket *pkt)
+EXPORT void decode_free_packet(AVPacket *pkt)
 {
 	av_free_packet(pkt);
 }
@@ -739,7 +744,7 @@ static void *decode_write_output(data_t *data, int channels)
 	return data->data;
 }
 
-void *decode_channels(data_t *data, AVFrame *frame, int channels)
+EXPORT void *decode_channels(data_t *data, AVFrame *frame, int channels)
 {
 	AVFormatContext *fmt_ctx = data->fmt_ctx;
 	AVFrame *iframe = data->iframe, *oframe = data->oframe;
@@ -749,7 +754,7 @@ void *decode_channels(data_t *data, AVFrame *frame, int channels)
 	return decode_write_output(data, channels);
 }
 
-void decode_close(data_t *data)
+EXPORT void decode_close(data_t *data)
 {
 	if (!data)
 		return;
@@ -760,7 +765,7 @@ void decode_close(data_t *data)
 /* }}} */
 
 /* {{{ FMOD */
-unsigned int fmod_init(data_t *data)
+EXPORT unsigned int fmod_init(data_t *data)
 {
 #ifdef ENABLE_FMOD
 	unsigned int result;
@@ -783,7 +788,7 @@ unsigned int fmod_init(data_t *data)
 #endif
 }
 
-unsigned int fmod_version(data_t *data)
+EXPORT unsigned int fmod_version(data_t *data)
 {
 #ifdef ENABLE_FMOD
 	unsigned int version;
@@ -831,7 +836,7 @@ FMOD_RESULT F_CALLBACK pcmsetposcallback(FMOD_SOUND *sound, int subsound,
 }
 #endif
 
-unsigned int fmod_create_stream(data_t *data, data_t *dec)
+EXPORT unsigned int fmod_create_stream(data_t *data, data_t *dec)
 {
 #ifdef ENABLE_FMOD
 	if (dec->audio.stream < 0) {
@@ -881,7 +886,7 @@ unsigned int fmod_create_stream(data_t *data, data_t *dec)
 #endif
 }
 
-unsigned int fmod_play(data_t *data)
+EXPORT unsigned int fmod_play(data_t *data)
 {
 #ifdef ENABLE_FMOD
 	unsigned int result = FMOD_Channel_SetPaused(data->channel, 0);
@@ -893,7 +898,7 @@ unsigned int fmod_play(data_t *data)
 #endif
 }
 
-void fmod_close(data_t *data)
+EXPORT void fmod_close(data_t *data)
 {
 #ifdef ENABLE_FMOD
 	unsigned int result;
@@ -911,7 +916,7 @@ void fmod_close(data_t *data)
 #endif
 }
 
-void fmod_queue_frame(data_t *data, AVFrame *frame)
+EXPORT void fmod_queue_frame(data_t *data, AVFrame *frame)
 {
 #ifdef ENABLE_FMOD
 	audio_buf_t *buf = &data->buf;
@@ -944,7 +949,7 @@ void fmod_queue_frame(data_t *data, AVFrame *frame)
 #endif
 }
 
-unsigned int fmod_update(data_t *data)
+EXPORT unsigned int fmod_update(data_t *data)
 {
 #ifdef ENABLE_FMOD
 	return FMOD_System_Update(data->system);
@@ -953,7 +958,7 @@ unsigned int fmod_update(data_t *data)
 #endif
 }
 
-int fmod_is_playing(data_t *data)
+EXPORT int fmod_is_playing(data_t *data)
 {
 #ifdef ENABLE_FMOD
 	FMOD_OPENSTATE state;
