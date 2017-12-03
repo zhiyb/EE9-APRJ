@@ -852,8 +852,8 @@ EXPORT unsigned int fmod_create_stream(data_t *data, data_t *dec, unsigned int s
 
 	// Subframe size
 	unsigned int fsize = c->channels * sizeof(short);
-	// Buffering for at least 100ms for FMOD audio quality reasons
-	buf->bufsize = fsize * (c->sample_rate * 100u / 1000u);
+	// Buffering for at least 160ms for FMOD audio quality reasons
+	buf->bufsize = fsize * (c->sample_rate * 160u / 1000u);
 	// Frame synchronisation buffering length
 	buf->syncsize = fsize * (c->sample_rate * sync / 1000u);
 	// Drop 50ms when left behind
