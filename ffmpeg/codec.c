@@ -31,7 +31,7 @@
 typedef struct {
 	pthread_mutex_t mut;
 	uint8_t *data, *rp;
-	unsigned int size, memsize;
+	unsigned int size, memsize, bufsize, dropsize, syncsize;
 } audio_buf_t;
 
 typedef struct data_t {
@@ -40,7 +40,6 @@ typedef struct data_t {
 	AVFrame *iframe, *oframe;
 	AVPacket pkt;
 	struct SwsContext *sc;
-	int resolution;
 	int pts;
 	void *data;
 	struct {
@@ -302,7 +301,6 @@ EXPORT int encode_add_video_stream(data_t *data, AVCodec *vcodec,
 		return -1;
 	}
 	data->video.stream = out_stream->id;
-	data->resolution = resolution;
 	return data->video.stream;
 }
 
@@ -819,9 +817,12 @@ FMOD_RESULT F_CALLBACK pcmreadcallback(FMOD_SOUND *sound, void *data, unsigned i
 		av_log(NULL, AV_LOG_WARNING, "FMOD RDCB: Requested: %u, available: %u\n", datalen, size);
 		return FMOD_ERR_NOTREADY;
 	}
-	// Check whether drop frame for synchronisation
-	if (size >= datalen * 4u)
-		buf->rp += datalen;
+	// Check whether drop frames for synchronisation
+	if (size >= buf->bufsize + buf->dropsize + buf->syncsize) {
+		buf->rp += buf->dropsize;
+		av_log(NULL, AV_LOG_WARNING, "FMOD RDCB: Dropped: %u, available: %u\n", buf->dropsize, size);
+	}
+	// Segmentation fault may happen if datalen > size at here
 	memcpy(data, buf->rp, datalen);
 	buf->rp += datalen;
 	pthread_mutex_unlock(&buf->mut);
@@ -836,7 +837,7 @@ FMOD_RESULT F_CALLBACK pcmsetposcallback(FMOD_SOUND *sound, int subsound,
 }
 #endif
 
-EXPORT unsigned int fmod_create_stream(data_t *data, data_t *dec)
+EXPORT unsigned int fmod_create_stream(data_t *data, data_t *dec, unsigned int sync)
 {
 #ifdef ENABLE_FMOD
 	if (dec->audio.stream < 0) {
@@ -846,7 +847,20 @@ EXPORT unsigned int fmod_create_stream(data_t *data, data_t *dec)
 	AVStream *stream = dec->fmt_ctx->streams[dec->audio.stream];
 	AVCodecContext *c = stream->codec;
 
-	pthread_mutex_init(&data->buf.mut, NULL);
+	audio_buf_t *buf = &data->buf;
+	pthread_mutex_init(&buf->mut, NULL);
+
+	// Subframe size
+	unsigned int fsize = c->channels * sizeof(short);
+	// Buffering for at least 100ms for FMOD audio quality reasons
+	buf->bufsize = fsize * (c->sample_rate * 100u / 1000u);
+	// Frame synchronisation buffering length
+	buf->syncsize = fsize * (c->sample_rate * sync / 1000u);
+	// Drop 50ms when left behind
+	buf->dropsize = fsize * (c->sample_rate * 50u / 1000u);
+	// Allocate audio buffer
+	buf->memsize = buf->bufsize + buf->syncsize + buf->dropsize * 4u;
+	buf->data = buf->rp = malloc(buf->memsize);
 
 	FMOD_CREATESOUNDEXINFO exinfo;
 	// Create and play the sound
@@ -854,7 +868,8 @@ EXPORT unsigned int fmod_create_stream(data_t *data, data_t *dec)
 	exinfo.cbsize            = sizeof(FMOD_CREATESOUNDEXINFO);
 	exinfo.numchannels       = c->channels;
 	exinfo.defaultfrequency  = c->sample_rate;
-	exinfo.decodebuffersize  = c->sample_rate / 10u;
+	// Half buffer size to avoid buffer overflow followed by underflow
+	exinfo.decodebuffersize  = data->buf.bufsize / fsize / 2u;
 	exinfo.format            = FMOD_SOUND_FORMAT_PCM16;
 	exinfo.pcmreadcallback   = pcmreadcallback;
 	exinfo.pcmsetposcallback = pcmsetposcallback;
@@ -930,9 +945,10 @@ EXPORT void fmod_queue_frame(data_t *data, AVFrame *frame)
 		memmove(buf->data, buf->rp, buf->size);
 		buf->rp = buf->data;
 	}
-	// Allocate new buffer size
-	while (buf->size + size > buf->memsize) {
-		buf->memsize += 4096u;
+	// Allocate new buffer space
+	if (buf->size + size > buf->memsize) {
+		av_log(NULL, AV_LOG_WARNING, "FMOD Queue: Insufficient buffer space\n");
+		buf->memsize += size * 4u;
 		uint8_t *data = (uint8_t *)realloc(buf->data, buf->memsize);
 		buf->rp = buf->data = data;
 	}

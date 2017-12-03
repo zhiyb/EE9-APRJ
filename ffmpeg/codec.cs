@@ -88,7 +88,7 @@ public class codec
 	public static extern uint fmod_version(IntPtr data);
 
 	[DllImport("codec.dll")]
-	public static extern uint fmod_create_stream(IntPtr data, IntPtr dec);
+	public static extern uint fmod_create_stream(IntPtr data, IntPtr dec, uint sync);
 
 	[DllImport("codec.dll")]
 	public static extern uint fmod_play(IntPtr data);

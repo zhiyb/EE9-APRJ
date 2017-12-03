@@ -47,7 +47,7 @@ void *decode_channels(data_t *data, AVFrame *frame, int channels);
 // FMOD audio engine
 unsigned int fmod_init(data_t *data);
 unsigned int fmod_version(data_t *data);
-unsigned int fmod_create_stream(data_t *data, data_t *dec);
+unsigned int fmod_create_stream(data_t *data, data_t *dec, unsigned int sync);
 unsigned int fmod_play(data_t *data);
 void fmod_close(data_t *data);
 void fmod_queue_frame(data_t *data, AVFrame *frame);

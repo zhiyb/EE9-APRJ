@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 		goto err_dec;
 	if ((result = fmod_version(data)) != 0)
 		clog << "Using FMOD version " << std::hex << result << std::dec << endl;
-	if (fmod_create_stream(data, data))
+	if (fmod_create_stream(data, data, 20))
 		goto err_fmod;
 	if (fmod_play(data))
 		goto err_fmod;
