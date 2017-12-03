@@ -697,9 +697,16 @@ EXPORT AVFrame *decode_audio_frame(data_t *data, AVPacket *pkt)
 	return iframe;
 }
 
-EXPORT unsigned int decode_audio_frame_length(AVFrame *frame)
+EXPORT int decode_audio_sample_rate(data_t *data)
 {
-	return 1000u * frame->nb_samples / frame->sample_rate;
+	AVStream *stream = data->fmt_ctx->streams[data->audio.stream];
+	AVCodecContext *c = stream->codec;
+	return c->sample_rate;
+}
+
+EXPORT int decode_audio_frame_samples(AVFrame *frame)
+{
+	return frame->nb_samples;
 }
 
 EXPORT AVFrame *decode_video_frame(data_t *data, AVPacket *pkt)
